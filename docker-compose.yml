@@ -3,8 +3,7 @@ services:
   ors-app:
     container_name: ors-app
     ports:
-      - "8080:8080"
-      - "9001:9001"
+      - ${ORS_PORT}:${ORS_PORT}
     image: openrouteservice/openrouteservice:latest
     user: "${UID:-0}:${GID:-0}"
     #    build:
@@ -23,3 +22,15 @@ services:
       - BUILD_GRAPHS=False # Forces the container to rebuild the graphs, e.g. when PBF is changed
       - "JAVA_OPTS=-Djava.awt.headless=true -server -XX:TargetSurvivorRatio=75 -XX:SurvivorRatio=64 -XX:MaxTenuringThreshold=3 -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:ParallelGCThreads=4 -Xms1g -Xmx2g"
       - "CATALINA_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9001 -Dcom.sun.management.jmxremote.rmi.port=9001 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
+
+  rider-db:
+    image: postgres:14-alpine
+    ports:
+      - ${RIDER_DB_PORT}:${RIDER_DB_PORT}
+    volumes:
+      - ./docker/rider:/var/lib/postgresql/data
+    command: -p ${RIDER_DB_PORT}
+    environment:
+      - POSTGRES_PASSWORD=${RIDER_DB_PASSWORD}
+      - POSTGRES_USER=${RIDER_DB_USER}
+      - POSTGRES_DB=${RIDER_DB_NAME}
