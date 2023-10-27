@@ -1,7 +1,7 @@
 from django.urls import path, include
 
-from . import views
+from rider.services import rider_service
 
 urlpatterns = [
-    path('register/', views.registerRider)
+    path('register/', rider_service.registerRider)
 ]

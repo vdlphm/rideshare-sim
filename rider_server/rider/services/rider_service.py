@@ -4,7 +4,7 @@ from django.db import IntegrityError
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
 
-from .models import Rider
+from rider.models import Rider
 
 
 @api_view(['POST'])
