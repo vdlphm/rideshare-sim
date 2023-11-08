@@ -1,13 +1,9 @@
 import "./App.css";
-import {
-  MapContainer,
-  Marker,
-  Popup,
-  TileLayer,
-  Polyline,
-} from "react-leaflet";
-import { RIDERS, CENTER, ROUTES } from "./const";
+import { MapContainer, TileLayer } from "react-leaflet";
+import { CENTER } from "./const";
 import { useState } from "react";
+import Rider from "./models/riders";
+import Driver from "./models/drivers";
 
 function App() {
   const [runSim, setRunSim] = useState(false),
@@ -26,19 +22,8 @@ function App() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {RIDERS.map(function (rider) {
-          return (
-            <Marker key={rider.email} position={rider.location}>
-              <Popup>
-                {rider.email} <br /> {debug ? rider.location : ""} <br />
-                {debug ? rider.destination : ""}
-              </Popup>
-            </Marker>
-          );
-        })}
-        {ROUTES.map(function (route, index) {
-          return <Polyline key={index} positions={route} />;
-        })}
+        <Rider runSim={runSim} debug={debug} />
+        <Driver runSim={runSim} debug={debug} />
       </MapContainer>
       <button onClick={() => setRunSim(!runSim)}>
         {runSim ? "Stop Simulation" : "Start Simulation"}
