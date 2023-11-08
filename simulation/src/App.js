@@ -17,6 +17,7 @@ function App() {
         scrollWheelZoom={false}
         zoomControl={false}
         dragging={false}
+        doubleClickZoom={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
