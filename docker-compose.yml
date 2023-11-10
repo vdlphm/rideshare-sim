@@ -34,3 +34,15 @@ services:
       - POSTGRES_PASSWORD=${RIDER_DB_PASSWORD}
       - POSTGRES_USER=${RIDER_DB_USER}
       - POSTGRES_DB=${RIDER_DB_NAME}
+
+  driver-db:
+    image: postgres:14-alpine
+    ports:
+      - ${DRIVER_DB_PORT}:${DRIVER_DB_PORT}
+    volumes:
+      - ./docker/driver:/var/lib/postgresql/data
+    command: -p ${DRIVER_DB_PORT}
+    environment:
+      - POSTGRES_PASSWORD=${DRIVER_DB_PASSWORD}
+      - POSTGRES_USER=${DRIVER_DB_USER}
+      - POSTGRES_DB=${DRIVER_DB_NAME}
