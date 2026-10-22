@@ -10,7 +10,7 @@ Sources: requirements, design and testing docs dated 2026-10-21 for `ride-share-
 
 ## Milestones
 
-- [ ] **M1 Foundation**: monorepo, shared packages, infra (Postgres/Redis/OSRM) up with isolation enforced.
+- [x] **M1 Foundation**: monorepo, shared packages, infra (Postgres/Redis/OSRM) up with isolation enforced.
 - [ ] **M2 Identity & edge**: User service + gateway; a rider can register, log in and call a protected echo route through the gateway.
 - [ ] **M3 Geo & live state**: Routing, Driver, Rider services; drivers go online and show up in `nearby`.
 - [ ] **M4 Trips & matching**: Trip + Matching + sim clock; a scripted rider/driver pair completes a trip over HTTP.
@@ -36,14 +36,18 @@ Each milestone ends with a demoable result and green tests for everything built 
 - [x] **1.4 `packages/common` core.** `ConfigModule` (Zod env), `nestjs-pino` logger with correlation id, error filter, health (`/health`, `/ready`), HTTP client (undici: timeout 2 s, retry/backoff on idempotent calls, correlation-id + token forwarding).
   - Deps: 1.1. Tests: Unit › packages/common — HTTP client.
   - Done 2026-10-23 (`fef071f`): `@nestjs/terminus` not used (own ~40-line health module with `ReadinessCheck`); HTTP client default auth = `forward`; `UpstreamError` maps to generic 500 (revisit 502 if useful); extension points for 1.5 (`TokenProvider`/`TOKEN_PROVIDER`, `requestContext`, `TODO(1.5)` public health routes) and 1.6 (`READINESS_CHECKS`).
-- [ ] **1.5 `packages/common` auth module.** `AuthContextMiddleware` (decode only), `@CurrentUser`, `@Roles`, `@Public`, global `RolesGuard`, service-token client.
+- [x] **1.5 `packages/common` auth module.** `AuthContextMiddleware` (decode only), `@CurrentUser`, `@Roles`, `@Public`, global `RolesGuard`, service-token client.
   - Deps: 1.4. Tests: Unit › packages/common — auth module.
-- [ ] **1.6 `packages/common` data modules.** `DatabaseModule` (Drizzle, per-service schema + migrations table), `RedisModule` (ioredis `keyPrefix`, wrapped `SCAN`, Lua helper), `SimClock` client.
+  - Done 2026-10-23 (`9de951a`): `jose` 6.2.12 decode-only; global `RolesGuard` means every non-`@Public()` route requires a user (user-service register/login/refresh must be `@Public()`); `ServiceTokenModule.register` (not global) provides `TOKEN_PROVIDER`.
+- [x] **1.6 `packages/common` data modules.** `DatabaseModule` (Drizzle, per-service schema + migrations table), `RedisModule` (ioredis `keyPrefix`, wrapped `SCAN`, Lua helper), `SimClock` client.
   - Deps: 1.4. Tests: Unit › SimClock; Integration › RedisModule.
-- [ ] **1.7 Infra: Postgres + Redis.** `infra/docker-compose.yml` base; Postgres 16 + PostGIS with `infra/postgres/init.sql` (database, roles, schemas, `postgis` schema); Redis 7 with AOF and `infra/redis/users.acl` (per-service users, default disabled). No host ports except the future gateway/web.
+  - Done 2026-10-23 (`6663bba`): custom schema-local migration runner (no `CREATE SCHEMA`); readiness checks exported (`POSTGRES_READINESS`, `REDIS_READINESS`) but must be wired into `HealthModule` by each service; `SimClock.sync()` must be awaited on startup.
+- [x] **1.7 Infra: Postgres + Redis.** `infra/docker-compose.yml` base; Postgres 16 + PostGIS with `infra/postgres/init.sql` (database, roles, schemas, `postgis` schema); Redis 7 with AOF and `infra/redis/users.acl` (per-service users, default disabled). No host ports except the future gateway/web.
   - Deps: 1.1. Tests: Integration › db isolation, redis isolation.
-- [ ] **1.8 Infra: OSRM.** `osrm-prep` one-shot (checksum-guarded extract/partition/customize from committed `infra/osrm/seattle.osm.pbf`) + `osrm` service on `ghcr.io/project-osrm/osrm-backend:v5.27.1`; commit the existing `clip.sh` + pbf.
+  - Done 2026-10-23 (`9392987`): `imresamu/postgis:16-3.5` (multi-arch); init as `infra/postgres/init/01-init.sh`; Redis ACL adds `+info` (found in review: `-@dangerous` blocked ioredis' ready check); tests in `tests/infra/` via Testcontainers compose + `exec`; `npm run infra:up|down|reset`.
+- [x] **1.8 Infra: OSRM.** `osrm-prep` one-shot (checksum-guarded extract/partition/customize from committed `infra/osrm/seattle.osm.pbf`) + `osrm` service on `ghcr.io/project-osrm/osrm-backend:v5.27.1`; commit the existing `clip.sh` + pbf.
   - Deps: 1.7. Validation: `docker compose up osrm` → route Pike Place → Space Needle returns `Ok`.
+  - Done 2026-10-23: checksum-guarded `osrm-prep` (rebuild ~2 s, skip ~0.3 s), healthcheck via bash `/dev/tcp` (image has no curl); included in `infra/docker-compose.yml`. Full stack `npm run infra:up` healthy in 13 s; route `Ok` 1638.2 m from inside the network.
 
 ### M2: Identity & edge
 
