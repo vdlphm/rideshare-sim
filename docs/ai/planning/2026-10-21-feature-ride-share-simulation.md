@@ -27,12 +27,15 @@ Each milestone ends with a demoable result and green tests for everything built 
 - [x] **1.1 Monorepo scaffold.** npm workspaces (`apps/*`, `packages/*`), TS base config, ESLint + Prettier, Vitest + `unplugin-swc` root config, `npm test` / `test:integration` / `test:e2e` scripts, `.env.example`.
   - Deps: none. Validation: `npm install && npm run build && npm test` green on an empty sample package.
   - Done 2026-10-23: Node pinned to 22.23.4 (`.nvmrc`, `engines`, `engine-strict`); npm workspaces; TS 5.9.3; NestJS 11.2.7; Vitest 4.1.12 + unplugin-swc 2.0.0 (Nest DI smoke test in `packages/common/test/nest-di.spec.ts` passes); ESLint 9 + typescript-eslint 8 + Prettier 3; three Vitest configs (unit / `*.int.spec.ts` / `*.e2e.spec.ts`). Vitest 3.2.7 replaced by 4.1.12 to clear 4 audit findings (2 critical in tinypool); `npm audit` = 0. Vite 7.3.7 pinned explicitly (Vitest 4 peer).
-- [ ] **1.2 `packages/contracts`.** Zod schemas + types for all public/internal APIs in the design (coords, trip, offer, driver state, sim config, users).
+- [x] **1.2 `packages/contracts`.** Zod schemas + types for all public/internal APIs in the design (coords, trip, offer, driver state, sim config, users).
   - Deps: 1.1. Tests: Unit › packages/contracts.
-- [ ] **1.3 `packages/geo`.** Polyline/GeoJSON decode, haversine, `interpolateAlongRoute(geometry, durations, elapsed)`, random point in bbox.
+  - Done 2026-10-23 (`35878a5`): pure Zod 4.6.7, no Nest deps (web can import it); strict request bodies (extra `riderId` rejected); 100% line coverage.
+- [x] **1.3 `packages/geo`.** Polyline/GeoJSON decode, haversine, `interpolateAlongRoute(geometry, durations, elapsed)`, random point in bbox.
   - Deps: 1.1. Tests: Unit › packages/geo.
-- [ ] **1.4 `packages/common` core.** `ConfigModule` (Zod env), `nestjs-pino` logger with correlation id, error filter, health (`/health`, `/ready`), HTTP client (undici: timeout 2 s, retry/backoff on idempotent calls, correlation-id + token forwarding).
+  - Done 2026-10-23 (`89fb5c9`): no runtime deps; also exports `SEATTLE_SPAWN_BBOX` / `SEATTLE_MAP_BBOX`; 100% statements/branches/functions/lines.
+- [x] **1.4 `packages/common` core.** `ConfigModule` (Zod env), `nestjs-pino` logger with correlation id, error filter, health (`/health`, `/ready`), HTTP client (undici: timeout 2 s, retry/backoff on idempotent calls, correlation-id + token forwarding).
   - Deps: 1.1. Tests: Unit › packages/common — HTTP client.
+  - Done 2026-10-23 (`fef071f`): `@nestjs/terminus` not used (own ~40-line health module with `ReadinessCheck`); HTTP client default auth = `forward`; `UpstreamError` maps to generic 500 (revisit 502 if useful); extension points for 1.5 (`TokenProvider`/`TOKEN_PROVIDER`, `requestContext`, `TODO(1.5)` public health routes) and 1.6 (`READINESS_CHECKS`).
 - [ ] **1.5 `packages/common` auth module.** `AuthContextMiddleware` (decode only), `@CurrentUser`, `@Roles`, `@Public`, global `RolesGuard`, service-token client.
   - Deps: 1.4. Tests: Unit › packages/common — auth module.
 - [ ] **1.6 `packages/common` data modules.** `DatabaseModule` (Drizzle, per-service schema + migrations table), `RedisModule` (ioredis `keyPrefix`, wrapped `SCAN`, Lua helper), `SimClock` client.
