@@ -51,14 +51,18 @@ Each milestone ends with a demoable result and green tests for everything built 
 
 ### M2: Identity & edge
 
-- [ ] **2.1 User service: schema + register.** `user_service` migrations (users, rider_profiles, driver_profiles, refresh_tokens, service_clients); `POST /users` (rider / driver+vehicle in one tx); admin + service clients seeded.
+- [x] **2.1 User service: schema + register.** `user_service` migrations (users, rider_profiles, driver_profiles, refresh_tokens, service_clients); `POST /users` (rider / driver+vehicle in one tx); admin + service clients seeded.
   - Deps: 1.2, 1.5, 1.6, 1.7. Tests: Unit › user (register, driver profile).
-- [ ] **2.2 User service: tokens.** RS256 key pair (generated on first boot, persisted in volume), `POST /auth/login`, `/auth/refresh` (rotation, reuse → 401), `/auth/token` (client credentials), JWKS.
+  - Done 2026-10-23 (`42b8ca0`, with 2.2): drizzle-kit migration hand-edited to drop `CREATE SCHEMA`; monorepo now builds packages before apps and tests/typecheck resolve `@rideshare/*` to source; esbuild override under `@esbuild-kit/core-utils` clears GHSA-67mh-4wv8-2f99.
+- [x] **2.2 User service: tokens.** RS256 key pair (generated on first boot, persisted in volume), `POST /auth/login`, `/auth/refresh` (rotation, reuse → 401), `/auth/token` (client credentials), JWKS.
   - Deps: 2.1. Tests: Unit › user (login/refresh/JWKS); Integration › user flow.
-- [ ] **2.3 User service: profiles.** `GET/PATCH /users/me`, admin `GET /users/:id`, `POST /internal/users/batch`.
+  - Done 2026-10-23 (`42b8ca0`): refresh-token families with reuse → family revocation (committed before the 401); constant-time-ish login via dummy bcrypt hash; `KEYS_DIR` needs a persistent volume.
+- [x] **2.3 User service: profiles.** `GET/PATCH /users/me`, admin `GET /users/:id`, `POST /internal/users/batch`.
   - Deps: 2.2. Tests: Unit › user (me, batch).
-- [ ] **2.4 Gateway: verify + permissions + proxy.** `JwtVerifyMiddleware` (jose, JWKS cache, refetch on unknown `kid`), route-permission table, `http-proxy-middleware` per service, `/internal/*` → 404, correlation id injection, public routes (register/login/refresh/JWKS).
+  - Done 2026-10-23 (`5b6ba9b`): batch returns 200 (changed from Nest's POST default 201), one query, deduped.
+- [x] **2.4 Gateway: verify + permissions + proxy.** `JwtVerifyMiddleware` (jose, JWKS cache, refetch on unknown `kid`), route-permission table, `http-proxy-middleware` per service, `/internal/*` → 404, correlation id injection, public routes (register/login/refresh/JWKS).
   - Deps: 2.2. Tests: Unit › gateway; Integration › gateway (401, internal not routable, correlation id).
+  - Done 2026-10-23: route table in `apps/gateway/src/routes.ts`; `/api/auth/token` not exposed; JWKS outage → 503; Authorization stripped on public routes; accepted `braces` advisory (unreachable, documented in design).
 - [ ] **2.5 Compose wiring for M2.** user + gateway services with healthchecks/`depends_on`; only 8080 published.
   - Deps: 2.4. Validation (M2 demo): register rider → login → `GET /api/users/me` via gateway; direct call to user:3001 from host fails. Tests: Integration › compose ports.
 

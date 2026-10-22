@@ -20,8 +20,6 @@ let gwApp: INestApplication;
 let userBase: string;
 let gw: string;
 
-const notRejectedByGateway = (status: number) => ![401, 403, 502, 503, 504].includes(status);
-
 const login = async (email: string, password: string) =>
   (await request(gw).post('/api/auth/login').send({ email, password })).body as {
     accessToken: string;
@@ -94,16 +92,16 @@ describe('gateway in front of the real user service', () => {
     expect(reg.status).toBe(201);
     const { accessToken, refreshToken } = await login('rita@example.com', 'password-1');
     const me = await request(gw).get('/api/users/me').set('Authorization', `Bearer ${accessToken}`);
-    // The profile endpoints may not exist yet in the user service (task 2.3): what matters here
-    // is that the gateway accepted the real token and proxied (not 401/403/5xx from the gateway).
-    expect(notRejectedByGateway(me.status)).toBe(true);
+    expect(me.status).toBe(200);
+    expect(me.body).toMatchObject({ email: 'rita@example.com', name: 'Rita', role: 'rider' });
+    expect(me.headers['x-correlation-id']).toBeTruthy();
 
     const refreshed = await request(gw).post('/api/auth/refresh').send({ refreshToken });
     expect(refreshed.status).toBe(200);
     const again = await request(gw)
       .get('/api/users/me')
       .set('Authorization', `Bearer ${refreshed.body.accessToken}`);
-    expect(notRejectedByGateway(again.status)).toBe(true);
+    expect(again.status).toBe(200);
   });
 
   it('enforces roles on real tokens (admin-only /users/:id)', async () => {
@@ -117,7 +115,8 @@ describe('gateway in front of the real user service', () => {
       (await request(gw).get(path).set('Authorization', `Bearer ${rider.accessToken}`)).status,
     ).toBe(403);
     const ok = await request(gw).get(path).set('Authorization', `Bearer ${admin.accessToken}`);
-    expect(notRejectedByGateway(ok.status)).toBe(true);
+    expect(ok.status).toBe(200);
+    expect(ok.body).toMatchObject({ id: reg.body.userId, name: 'Ron' });
   });
 
   it('rejects a real service token and does not expose /auth/token or /internal', async () => {
