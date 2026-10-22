@@ -14,11 +14,13 @@ describe('compose: published host ports', () => {
   });
   const config = JSON.parse(raw) as ComposeConfig;
 
-  it('defines postgres and redis', () => {
-    expect(Object.keys(config.services)).toEqual(expect.arrayContaining(['postgres', 'redis']));
+  it('defines postgres, redis and osrm', () => {
+    expect(Object.keys(config.services)).toEqual(
+      expect.arrayContaining(['postgres', 'redis', 'osrm-prep', 'osrm']),
+    );
   });
 
-  it.each(['postgres', 'redis'])('%s publishes no host ports', (name) => {
+  it.each(['postgres', 'redis', 'osrm-prep', 'osrm'])('%s publishes no host ports', (name) => {
     expect(config.services[name]?.ports ?? []).toEqual([]);
   });
 

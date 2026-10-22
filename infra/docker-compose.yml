@@ -1,8 +1,8 @@
-# Local stack. No host ports are published for Postgres or Redis: services reach them
-# on the compose network as postgres:5432 and redis:6379.
-# OSRM (osrm/compose.yml) will be added to the include list when task 1.8 lands.
+# Local stack. No host ports are published for Postgres, Redis or OSRM: services reach them
+# on the compose network as postgres:5432, redis:6379 and osrm:5000.
 name: rideshare
 
 include:
   - postgres/compose.yml
   - redis/compose.yml
+  - osrm/compose.yml
