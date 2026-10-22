@@ -1,5 +1,6 @@
 import { Controller, Get, Inject, Module, Res, type DynamicModule } from '@nestjs/common';
 import type { Response } from 'express';
+import { Public } from '../auth/decorators';
 
 export interface ReadinessCheck {
   name: string;
@@ -8,7 +9,7 @@ export interface ReadinessCheck {
 
 export const READINESS_CHECKS = Symbol('READINESS_CHECKS');
 
-// TODO(1.5): mark these routes @Public() once the auth module exists.
+@Public()
 @Controller()
 export class HealthController {
   constructor(@Inject(READINESS_CHECKS) private readonly checks: ReadinessCheck[]) {}

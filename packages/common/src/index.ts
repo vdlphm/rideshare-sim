@@ -6,3 +6,4 @@ export * from './logging';
 export * from './errors';
 export * from './health';
 export * from './http';
+export * from './auth';
