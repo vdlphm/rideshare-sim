@@ -1,0 +1,42 @@
+# Include from infra/docker-compose.yml, or run standalone:
+#   docker compose -p rideshare-osrm-test -f infra/osrm/compose.yml up -d --wait
+x-osrm-image: &osrm-image ghcr.io/project-osrm/osrm-backend:v5.27.1
+
+services:
+  osrm-prep:
+    image: *osrm-image
+    entrypoint: ["/bin/bash", "/prep.sh"]
+    volumes:
+      - ./seattle.osm.pbf:/src/seattle.osm.pbf:ro
+      - ./prep.sh:/prep.sh:ro
+      - osrm-data:/data
+    restart: "no"
+
+  osrm:
+    image: *osrm-image
+    command: ["osrm-routed", "--algorithm", "mld", "--port", "5000", "/data/seattle.osrm"]
+    # No `ports:` on purpose: reachable only inside the compose network at http://osrm:5000
+    volumes:
+      - osrm-data:/data:ro
+    depends_on:
+      osrm-prep:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      # Image has no curl/wget; use bash /dev/tcp and require a real route answer.
+      # Connection: close matters: osrm-routed keeps connections alive otherwise and the read would hang.
+      test:
+        - CMD
+        - /bin/bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/5000 &&
+          printf 'GET /route/v1/driving/-122.3422,47.6097;-122.3493,47.6205 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          timeout 3 cat <&3 | grep -q '"code":"Ok"'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  osrm-data:
