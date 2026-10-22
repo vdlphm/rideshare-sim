@@ -24,8 +24,9 @@ Each milestone ends with a demoable result and green tests for everything built 
 
 ### M1: Foundation
 
-- [ ] **1.1 Monorepo scaffold.** npm workspaces (`apps/*`, `packages/*`), TS base config, ESLint + Prettier, Vitest + `unplugin-swc` root config, `npm test` / `test:integration` / `test:e2e` scripts, `.env.example`.
+- [x] **1.1 Monorepo scaffold.** npm workspaces (`apps/*`, `packages/*`), TS base config, ESLint + Prettier, Vitest + `unplugin-swc` root config, `npm test` / `test:integration` / `test:e2e` scripts, `.env.example`.
   - Deps: none. Validation: `npm install && npm run build && npm test` green on an empty sample package.
+  - Done 2026-10-23: Node pinned to 22.23.4 (`.nvmrc`, `engines`, `engine-strict`); npm workspaces; TS 5.9.3; NestJS 11.2.7; Vitest 4.1.12 + unplugin-swc 2.0.0 (Nest DI smoke test in `packages/common/test/nest-di.spec.ts` passes); ESLint 9 + typescript-eslint 8 + Prettier 3; three Vitest configs (unit / `*.int.spec.ts` / `*.e2e.spec.ts`). Vitest 3.2.7 replaced by 4.1.12 to clear 4 audit findings (2 critical in tinypool); `npm audit` = 0. Vite 7.3.7 pinned explicitly (Vitest 4 peer).
 - [ ] **1.2 `packages/contracts`.** Zod schemas + types for all public/internal APIs in the design (coords, trip, offer, driver state, sim config, users).
   - Deps: 1.1. Tests: Unit › packages/contracts.
 - [ ] **1.3 `packages/geo`.** Polyline/GeoJSON decode, haversine, `interpolateAlongRoute(geometry, durations, elapsed)`, random point in bbox.
@@ -162,6 +163,7 @@ Solo developer, rough working days:
 | Matching job/offer races | Double offers / stuck trips | Two-layer exclusivity (Redis lock + DB unique index); race tests in 4.5. |
 | Docker memory on laptop | Stack won't start | Single Postgres + single Redis already; measure in 5.4, set container memory limits. |
 | Scope creep (UI polish) | Delays | UI kept to listed components; extra polish logged as follow-ups. |
+| npm 10.9.x resolver crashes (`edgesOut`) on Vitest 4's optional peer chain (`@vitest/mocker → msw`) when resolving **from scratch** (still present in npm 10.9.9 bundled with Node 22.23.4) | Regenerating the lockfile fails on npm 10 | Lockfile generated with npm 11.21.1 and committed. With it, `npm ci` and adding packages (`npm install <pkg> -w <ws>`) work on npm 10.9.9 (verified). Never delete the lockfile; if a full regeneration is needed, run `npx npm@11 install`. |
 
 ## Resources Needed
 

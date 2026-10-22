@@ -7,3 +7,6 @@ dist
 # OSM source extracts are large; only the committed Seattle clip is tracked
 *.osm.pbf
 !infra/osrm/seattle.osm.pbf
+
+coverage
+*.tsbuildinfo

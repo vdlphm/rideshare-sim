@@ -76,7 +76,7 @@ All arrows are HTTP. **Identity rule:** every user — rider, driver, admin — 
 
 ### Tech stack
 
-- Node 22, TypeScript, **npm workspaces** monorepo.
+- Node **22.23.4** (pinned in `.nvmrc` and `package.json` `engines`, enforced by `engine-strict=true` in `.npmrc`; Docker images use `node:22.23.4`), TypeScript, **npm workspaces** monorepo.
 - **NestJS 11** (default Express platform, `@nestjs/platform-express`) for every backend service: modules, DI, guards, decorators. Same structure in each service: `*.module.ts`, `*.controller.ts`, `*.service.ts`, `*.repository.ts`.
 - **Zod** for contracts + validation via `nestjs-zod` (`createZodDto`), so `packages/contracts` stays the single schema source.
 - Config via `@nestjs/config` + Zod env schema; logging via `nestjs-pino`; health via `@nestjs/terminus`; scheduled work (sweepers, reconcile, poller) via `@nestjs/schedule`.

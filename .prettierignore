@@ -1,0 +1,9 @@
+docs
+infra
+dist
+coverage
+node_modules
+package-lock.json
+.worktrees
+.claude
+.ai-devkit.json

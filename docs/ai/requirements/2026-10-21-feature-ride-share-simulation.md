@@ -108,7 +108,7 @@ description: Clarify the problem space, gather requirements, and define success 
 
 **Technical constraints**
 
-- TypeScript on Node 22; backend services in **NestJS** (default Express platform), UI in React; monorepo.
+- TypeScript on Node 22.23.4 (pinned); backend services in **NestJS** (default Express platform), UI in React; monorepo.
 - Docker Compose for local orchestration; must run on a macOS laptop (Docker Desktop, ~8 GB RAM available to Docker).
 - Map tiles from a free source (OSM tiles at low volume or a free MapLibre style) — acceptable for local/demo use only.
 
