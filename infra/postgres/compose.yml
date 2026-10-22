@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: imresamu/postgis:16-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      USER_SERVICE_DB_PASSWORD: ${USER_SERVICE_DB_PASSWORD:?set USER_SERVICE_DB_PASSWORD in .env}
+      TRIP_SERVICE_DB_PASSWORD: ${TRIP_SERVICE_DB_PASSWORD:?set TRIP_SERVICE_DB_PASSWORD in .env}
+      MATCHING_SERVICE_DB_PASSWORD: ${MATCHING_SERVICE_DB_PASSWORD:?set MATCHING_SERVICE_DB_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U postgres -d ridesharing']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  postgres-data:

@@ -1,0 +1,22 @@
+services:
+  redis:
+    image: redis:7.4
+    restart: unless-stopped
+    user: redis
+    environment:
+      REDIS_RIDER_PASSWORD: ${REDIS_RIDER_PASSWORD:?set REDIS_RIDER_PASSWORD in .env}
+      REDIS_DRIVER_PASSWORD: ${REDIS_DRIVER_PASSWORD:?set REDIS_DRIVER_PASSWORD in .env}
+      REDIS_MATCHING_PASSWORD: ${REDIS_MATCHING_PASSWORD:?set REDIS_MATCHING_PASSWORD in .env}
+      REDIS_ROUTING_PASSWORD: ${REDIS_ROUTING_PASSWORD:?set REDIS_ROUTING_PASSWORD in .env}
+    entrypoint: ['sh', '/usr/local/bin/redis-entrypoint.sh']
+    volumes:
+      - redis-data:/data
+      - ./entrypoint.sh:/usr/local/bin/redis-entrypoint.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli --user healthcheck --pass healthcheck --no-auth-warning ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  redis-data:
