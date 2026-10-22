@@ -26,7 +26,7 @@ import { userEnvSchema } from './config';
 import { KeyService } from './keys/key.service';
 import { SeedService } from './seed/seed.service';
 import { TokenService } from './tokens/token.service';
-import { UsersController } from './users/users.controller';
+import { InternalUsersController, UsersController } from './users/users.controller';
 import { DrizzleUsersRepository, UsersRepository } from './users/users.repository';
 import { UsersService } from './users/users.service';
 
@@ -62,7 +62,7 @@ export class AppModule {
         }),
         UserHealthModule,
       ],
-      controllers: [UsersController, AuthController],
+      controllers: [UsersController, InternalUsersController, AuthController],
       providers: [
         { provide: APP_PIPE, useClass: ZodValidationPipe },
         { provide: CLOCK, useValue: () => Date.now() },

@@ -9,12 +9,57 @@ import type {
   ServiceClientRecord,
   ServiceClientsRepository,
 } from '../src/auth/service-clients.repository';
-import type { NewUser, UserRecord, UsersRepository } from '../src/users/users.repository';
+import type { UserDisplay, Vehicle } from '@rideshare/contracts';
+import type {
+  NewUser,
+  ProfileUpdate,
+  UserProfile,
+  UserRecord,
+  UsersRepository,
+} from '../src/users/users.repository';
 
 export class FakeUsersRepository implements UsersRepository {
   users: UserRecord[] = [];
   created: NewUser[] = [];
   failWith?: unknown;
+  phones = new Map<string, string>();
+  vehicles = new Map<string, Vehicle>();
+  batchCalls: string[][] = [];
+
+  private profile(u: UserRecord): UserProfile {
+    return {
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      phone: this.phones.get(u.id) ?? null,
+      role: u.role,
+      vehicle: this.vehicles.get(u.id) ?? null,
+    };
+  }
+  async findProfileById(id: string) {
+    const u = this.users.find((x) => x.id === id);
+    return u && this.profile(u);
+  }
+  async updateProfile(id: string, update: ProfileUpdate) {
+    if (this.failWith) throw this.failWith;
+    const u = this.users.find((x) => x.id === id);
+    if (!u) return undefined;
+    if (update.name !== undefined) u.name = update.name;
+    if (update.phone !== undefined) this.phones.set(id, update.phone);
+    if (update.vehicle) this.vehicles.set(id, update.vehicle);
+    return this.profile(u);
+  }
+  async findDisplayByIds(ids: string[]): Promise<UserDisplay[]> {
+    this.batchCalls.push(ids);
+    return this.users
+      .filter((u) => ids.includes(u.id))
+      .map((u) => ({
+        id: u.id,
+        name: u.name,
+        role: u.role,
+        vehicle: this.vehicles.get(u.id) ?? null,
+      }));
+  }
 
   async createWithProfile(input: NewUser) {
     if (this.failWith) throw this.failWith;
@@ -27,6 +72,8 @@ export class FakeUsersRepository implements UsersRepository {
       role: input.role,
       name: input.name,
     });
+    if (input.phone) this.phones.set(id, input.phone);
+    if (input.vehicle) this.vehicles.set(id, input.vehicle);
     return { id };
   }
   async findByEmail(email: string) {
