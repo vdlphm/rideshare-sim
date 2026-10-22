@@ -1,6 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
-  "compilerOptions": { "noEmit": true },
+  "compilerOptions": {
+    "noEmit": true,
+    // Typecheck workspace packages from source so no prior build is needed.
+    "paths": { "@rideshare/*": ["./packages/*/src"] }
+  },
   "include": [
     "apps/*/src",
     "apps/*/test",

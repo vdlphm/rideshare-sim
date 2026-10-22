@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import swc from 'unplugin-swc';
 import { defineConfig, type ViteUserConfig } from 'vitest/config';
 
@@ -16,6 +17,15 @@ export function makeConfig(opts: { include: string[]; exclude?: string[] }): Vit
         },
       }),
     ],
+    // Resolve workspace packages from source so tests need no prior build.
+    resolve: {
+      alias: [
+        {
+          find: /^@rideshare\/([^/]+)$/,
+          replacement: resolve(__dirname, 'packages/$1/src/index.ts'),
+        },
+      ],
+    },
     test: {
       globals: false,
       environment: 'node',
