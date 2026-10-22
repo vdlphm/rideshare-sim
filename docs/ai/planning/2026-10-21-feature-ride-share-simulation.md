@@ -1,0 +1,174 @@
+---
+phase: planning
+title: Project Planning & Task Breakdown
+description: Break down work into actionable tasks and estimate timeline
+---
+
+# Project Planning & Task Breakdown
+
+Sources: requirements, design and testing docs dated 2026-10-21 for `ride-share-simulation`. Test references (e.g. *Tests: Unit › trip*) point to sections of the testing doc.
+
+## Milestones
+
+- [ ] **M1 Foundation**: monorepo, shared packages, infra (Postgres/Redis/OSRM) up with isolation enforced.
+- [ ] **M2 Identity & edge**: User service + gateway; a rider can register, log in and call a protected echo route through the gateway.
+- [ ] **M3 Geo & live state**: Routing, Driver, Rider services; drivers go online and show up in `nearby`.
+- [ ] **M4 Trips & matching**: Trip + Matching + sim clock; a scripted rider/driver pair completes a trip over HTTP.
+- [ ] **M5 Simulator**: bots drive the full lifecycle headlessly; E2E "≥3 trips completed" passes.
+- [ ] **M6 Live UI**: gateway WS poller + web app with map, controls, inspector, stats.
+- [ ] **M7 Hardening**: E2E suite, perf run, README; ready for review.
+
+Each milestone ends with a demoable result and green tests for everything built so far.
+
+## Task Breakdown
+
+### M1: Foundation
+
+- [ ] **1.1 Monorepo scaffold.** npm workspaces (`apps/*`, `packages/*`), TS base config, ESLint + Prettier, Vitest + `unplugin-swc` root config, `npm test` / `test:integration` / `test:e2e` scripts, `.env.example`.
+  - Deps: none. Validation: `npm install && npm run build && npm test` green on an empty sample package.
+- [ ] **1.2 `packages/contracts`.** Zod schemas + types for all public/internal APIs in the design (coords, trip, offer, driver state, sim config, users).
+  - Deps: 1.1. Tests: Unit › packages/contracts.
+- [ ] **1.3 `packages/geo`.** Polyline/GeoJSON decode, haversine, `interpolateAlongRoute(geometry, durations, elapsed)`, random point in bbox.
+  - Deps: 1.1. Tests: Unit › packages/geo.
+- [ ] **1.4 `packages/common` core.** `ConfigModule` (Zod env), `nestjs-pino` logger with correlation id, error filter, health (`/health`, `/ready`), HTTP client (undici: timeout 2 s, retry/backoff on idempotent calls, correlation-id + token forwarding).
+  - Deps: 1.1. Tests: Unit › packages/common — HTTP client.
+- [ ] **1.5 `packages/common` auth module.** `AuthContextMiddleware` (decode only), `@CurrentUser`, `@Roles`, `@Public`, global `RolesGuard`, service-token client.
+  - Deps: 1.4. Tests: Unit › packages/common — auth module.
+- [ ] **1.6 `packages/common` data modules.** `DatabaseModule` (Drizzle, per-service schema + migrations table), `RedisModule` (ioredis `keyPrefix`, wrapped `SCAN`, Lua helper), `SimClock` client.
+  - Deps: 1.4. Tests: Unit › SimClock; Integration › RedisModule.
+- [ ] **1.7 Infra: Postgres + Redis.** `infra/docker-compose.yml` base; Postgres 16 + PostGIS with `infra/postgres/init.sql` (database, roles, schemas, `postgis` schema); Redis 7 with AOF and `infra/redis/users.acl` (per-service users, default disabled). No host ports except the future gateway/web.
+  - Deps: 1.1. Tests: Integration › db isolation, redis isolation.
+- [ ] **1.8 Infra: OSRM.** `osrm-prep` one-shot (checksum-guarded extract/partition/customize from committed `infra/osrm/seattle.osm.pbf`) + `osrm` service on `ghcr.io/project-osrm/osrm-backend:v5.27.1`; commit the existing `clip.sh` + pbf.
+  - Deps: 1.7. Validation: `docker compose up osrm` → route Pike Place → Space Needle returns `Ok`.
+
+### M2: Identity & edge
+
+- [ ] **2.1 User service: schema + register.** `user_service` migrations (users, rider_profiles, driver_profiles, refresh_tokens, service_clients); `POST /users` (rider / driver+vehicle in one tx); admin + service clients seeded.
+  - Deps: 1.2, 1.5, 1.6, 1.7. Tests: Unit › user (register, driver profile).
+- [ ] **2.2 User service: tokens.** RS256 key pair (generated on first boot, persisted in volume), `POST /auth/login`, `/auth/refresh` (rotation, reuse → 401), `/auth/token` (client credentials), JWKS.
+  - Deps: 2.1. Tests: Unit › user (login/refresh/JWKS); Integration › user flow.
+- [ ] **2.3 User service: profiles.** `GET/PATCH /users/me`, admin `GET /users/:id`, `POST /internal/users/batch`.
+  - Deps: 2.2. Tests: Unit › user (me, batch).
+- [ ] **2.4 Gateway: verify + permissions + proxy.** `JwtVerifyMiddleware` (jose, JWKS cache, refetch on unknown `kid`), route-permission table, `http-proxy-middleware` per service, `/internal/*` → 404, correlation id injection, public routes (register/login/refresh/JWKS).
+  - Deps: 2.2. Tests: Unit › gateway; Integration › gateway (401, internal not routable, correlation id).
+- [ ] **2.5 Compose wiring for M2.** user + gateway services with healthchecks/`depends_on`; only 8080 published.
+  - Deps: 2.4. Validation (M2 demo): register rider → login → `GET /api/users/me` via gateway; direct call to user:3001 from host fails. Tests: Integration › compose ports.
+
+### M3: Geo & live state
+
+- [ ] **3.1 Routing service.** `/internal/route`, `/internal/table`, `/internal/nearest` (150 m max snap) + admin debug routes; Redis cache (`routing:` prefix, rounded keys, TTL 1 h).
+  - Deps: 1.6, 1.8. Tests: Unit › routing; Integration › routing vs OSRM (Pike Place → Space Needle, Elliott Bay → 422).
+- [ ] **3.2 Driver service: live state.** `online/offline/location/GET me`; Lua script for atomic status (hash + GEO + online set); `GET /internal/drivers/nearby`, `/internal/drivers/online`, `PUT /internal/drivers/:id/status`; stale sweeper (60 s).
+  - Deps: 1.5, 1.6. Tests: Integration › driver (live state, status idempotent, Lua atomicity, sweeper, AOF restart).
+- [ ] **3.3 Rider service: live state.** `POST/GET /riders/me/location` (`rider:pos:{sub}`, TTL 10 min); `GET /internal/riders/positions`. (Ride request lands in 4.4.)
+  - Deps: 1.5, 1.6. Tests: Integration › rider location.
+- [ ] **3.4 Compose + gateway routes for M3.** Add routing/driver/rider; permission entries.
+  - Deps: 3.1–3.3, 2.4. Validation (M3 demo): two drivers go online via gateway → `nearby` from inside network returns them closest-first.
+
+### M4: Trips & matching
+
+- [ ] **4.1 Simulator: clock only.** Simulator app skeleton with clock (speed/pause), `GET /internal/clock`, `GET/PUT /sim/config` (admin), `/internal/sim/state`.
+  - Deps: 1.4, 1.5. Tests: Unit › SimClock (server side).
+- [ ] **4.2 Trip service: domain + schema.** `trip_service` migrations (PostGIS columns, partial unique indexes, `trip_events`, `version`); pure `transition()` state machine.
+  - Deps: 1.6, 1.7. Tests: Unit › trip — state machine; Integration › migrations.
+- [ ] **4.3 Trip service: APIs.** `POST /internal/trips` (rider from forwarded token; snap + route via Routing; call Matching), `GET /trips/:id` (party/admin), driver `arrive/start/complete`, internal `assign` (optimistic version, 409s), `no-drivers`, `unassign` (MATCHED only), `GET /internal/trips/active`, `/internal/trips/stats`; Driver status calls with retry; sim-time timestamps.
+  - Deps: 4.1, 4.2, 3.1, 3.2. Tests: Integration › trip (create, concurrent assign, busy driver, retry, stats formulas, riderId from token).
+- [ ] **4.4 Rider service: ride request.** `POST /riders/me/rides` (pickup defaults to `rider:pos`, 422 if none; forwards rider token; 409 active trip).
+  - Deps: 3.3, 4.3. Tests: Integration › rider (default pickup, 409, body riderId ignored).
+- [ ] **4.5 Matching service: jobs + offers.** `matching_service` migrations (offers, match_jobs); `POST /internal/match` (idempotent, 202); algorithm (radius widen, ETA rank via table, Redis lock, declined set); sweeper on sim clock (expiry, 60 sim-s give-up); resume ACTIVE jobs on boot.
+  - Deps: 4.1, 4.3, 3.1, 3.2. Tests: Unit › matching — algorithm; Integration › matching (idempotent, race, resume, decline/timeout fallback, offline mid-offer).
+- [ ] **4.6 Matching: driver APIs.** `GET /offers/me`, `POST /offers/:id/accept` (→ Trip assign; 410/409), `decline`.
+  - Deps: 4.5. Tests: Integration › matching (`/offers/me` scoping).
+- [ ] **4.7 Driver: trip-aware offline + reconcile.** Offline with MATCHED → Trip unassign; ARRIVED/IN_PROGRESS → 409; reconcile job vs `/internal/trips/active` every 30 s.
+  - Deps: 4.3, 3.2. Tests: Integration › driver (offline cases, reconcile).
+- [ ] **4.8 Scripted lifecycle test.** Integration test driving one rider + one driver through every state via the gateway (no bots).
+  - Deps: 4.4–4.7. Validation (M4 demo): test green; trip reaches `COMPLETED`.
+
+### M5: Simulator
+
+- [ ] **5.1 Bot HTTP client.** Login/register, auto refresh before expiry, re-login on failure; talks to `http://gateway:8080`.
+  - Deps: 2.4, 4.1. Tests: Unit › simulator (client refresh with fake clock).
+- [ ] **5.2 Driver bots.** Pool `driver-NNN@sim.local`; state machine idle → offered → to pickup → arrived → in trip → idle; movement via `interpolateAlongRoute` on sim time; accept probability; driverCount scaling (retire idle only).
+  - Deps: 5.1, 1.3, 4.6. Tests: Unit › simulator (bot state machine, accept probability, retire idle).
+- [ ] **5.3 Rider bots + spawner.** Pool `rider-NNN@sim.local`; spawn on sim-time interval with jitter; random snapped pickup/dropoff in spawn bbox (≥500 m); post position; request; poll trip; dispose; `POST /sim/riders` click-to-add.
+  - Deps: 5.1, 4.4. Tests: Unit › simulator (spawn scheduler).
+- [ ] **5.4 Headless E2E.** `test:e2e`: compose up → 10 drivers, 1 rider / 5 s, 10x → ≥3 trips `COMPLETED` in 2 real min; invariant query (no driver with two active trips); driverCount 0 → `NO_DRIVERS`; pause → no movement.
+  - Deps: 5.2, 5.3. Tests: E2E (all except click-to-add).
+
+### M6: Live UI
+
+- [ ] **6.1 Gateway WS + poller.** Admin-only `/ws`; poller (250 ms drivers/riders/active trips with cursor, 2 s stats, sim config); snapshot + diff frames; user display info via batch (60 s cache); stops with no clients.
+  - Deps: 2.4, 3.2, 3.3, 4.3, 4.1, 2.3. Tests: Integration › gateway WS.
+- [ ] **6.2 Web scaffold + login.** Vite + React + Zustand; `LoginPage`; token refresh; `useSimSocket` with reconnect.
+  - Deps: 6.1. Validation: log in as admin, receive snapshot.
+- [ ] **6.3 Map view.** MapLibre with free OSM-based style centered on downtown Seattle; drivers by status, waiting riders, routes (pickup dashed / trip solid), dropoffs; client-side position interpolation.
+  - Deps: 6.2.
+- [ ] **6.4 Controls, inspector, stats.** ControlPanel (driverCount, spawn interval, speed/pause, accept probability, click-to-add with Esc), Inspector (timeline, vehicle, client-side ETA), StatsPanel.
+  - Deps: 6.3, 5.3. Tests: E2E › click-to-add; Manual › UI checklist.
+- [ ] **6.5 Web in compose.** `web` service on 5173 (only other published port).
+  - Deps: 6.4. Tests: Integration › compose ports.
+
+### M7: Hardening
+
+- [ ] **7.1 Perf run.** 200 drivers, 1 rider/s, 5x for 10 min; record gateway p95, request→offer median, poller cycle, UI fps in testing doc.
+  - Deps: M6. Tests: Performance Testing.
+- [ ] **7.2 Coverage + gaps.** `test:coverage` thresholds (100% domain logic, ≥80% per service); document gaps.
+  - Deps: M6.
+- [ ] **7.3 README + docs sync.** Quickstart (`docker compose up`), seeded admin credentials, architecture diagram, how to refresh map data, known limitations; update implementation doc.
+  - Deps: M6.
+
+## Dependencies
+
+```mermaid
+graph LR
+  M1[M1 Foundation] --> M2[M2 Identity & edge]
+  M1 --> M3[M3 Geo & live state]
+  M2 --> M3
+  M3 --> M4[M4 Trips & matching]
+  M4 --> M5[M5 Simulator]
+  M4 --> M6[M6 Live UI]
+  M5 --> M6
+  M6 --> M7[M7 Hardening]
+```
+
+- Critical path: 1.1 → 1.4 → 1.5/1.6 → 2.1 → 2.2 → 2.4 → 3.2 → 4.3 → 4.5 → 4.6 → 5.2 → 5.4 → 6.1 → 6.4.
+- Parallelizable: 1.2/1.3 alongside 1.4; 1.7/1.8 alongside packages; 3.1/3.2/3.3 together; 4.1/4.2 together; 6.2/6.3 can start against a recorded snapshot fixture before 6.1 is done.
+- External: Docker Desktop (8 GB), images (`postgis/postgis:16`, `redis:7`, `ghcr.io/project-osrm/osrm-backend:v5.27.1`), free map style for MapLibre (no API key).
+
+## Timeline & Estimates
+
+Solo developer, rough working days:
+
+| Milestone | Estimate |
+|---|---|
+| M1 Foundation | 2–3 d |
+| M2 Identity & edge | 2–3 d |
+| M3 Geo & live state | 2 d |
+| M4 Trips & matching | 4–5 d |
+| M5 Simulator | 2–3 d |
+| M6 Live UI | 3–4 d |
+| M7 Hardening | 1–2 d |
+| **Total** | **~16–22 d** (+20% buffer for unknowns) |
+
+## Risks & Mitigation
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Vitest + Nest decorator metadata (SWC) friction | Slows every service's tests | Prove it in 1.1 with a sample Nest module before building services; fall back to Jest if blocked > ½ day. |
+| Drizzle + PostGIS geography types | Trip schema awkward | Custom column types in 4.2; fall back to raw SQL for geo columns. |
+| Redis ACL + ioredis `keyPrefix` edge cases (GEO, Lua, SCAN) | Isolation leaks or `NOPERM` surprises | Integration tests in 1.6/1.7 before services use them. |
+| Sim-time consistency across services (clock fetched over HTTP) | Offers expire early/late, odd stats | Single `SimClock` client, tested extrapolation; tolerances in tests. |
+| Polling load at 200 drivers (≈400 req/s through gateway) | Lag, missed perf target | Bots skip offer polling while on trip; measure early in 5.4; tune tick rates. |
+| Matching job/offer races | Double offers / stuck trips | Two-layer exclusivity (Redis lock + DB unique index); race tests in 4.5. |
+| Docker memory on laptop | Stack won't start | Single Postgres + single Redis already; measure in 5.4, set container memory limits. |
+| Scope creep (UI polish) | Delays | UI kept to listed components; extra polish logged as follow-ups. |
+
+## Resources Needed
+
+- Node 22, Docker Desktop (8 GB to Docker), the committed Seattle map extract.
+- Libraries per design (NestJS 11, nestjs-zod, Drizzle, ioredis, jose, undici, MapLibre, Zustand, Vitest, Testcontainers).
+- Docs: OSRM HTTP API, Redis ACL/GEO, NestJS middleware/guards, Drizzle `pgSchema`.
+
+## Traceability check
+
+Every testing-doc scenario maps to at least one task: Unit (1.2–1.6, 2.1–2.4, 3.1, 4.2, 4.5, 5.1–5.3), Integration (1.6–1.7, 2.2, 2.4–2.5, 3.1–3.3, 4.2–4.7, 6.1, 6.5), E2E (5.4, 6.4), Performance (7.1), Manual (6.4).
