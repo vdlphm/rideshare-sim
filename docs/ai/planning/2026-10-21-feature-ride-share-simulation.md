@@ -11,7 +11,7 @@ Sources: requirements, design and testing docs dated 2026-10-21 for `ride-share-
 ## Milestones
 
 - [x] **M1 Foundation**: monorepo, shared packages, infra (Postgres/Redis/OSRM) up with isolation enforced.
-- [ ] **M2 Identity & edge**: User service + gateway; a rider can register, log in and call a protected echo route through the gateway.
+- [x] **M2 Identity & edge**: User service + gateway; a rider can register, log in and call a protected echo route through the gateway.
 - [ ] **M3 Geo & live state**: Routing, Driver, Rider services; drivers go online and show up in `nearby`.
 - [ ] **M4 Trips & matching**: Trip + Matching + sim clock; a scripted rider/driver pair completes a trip over HTTP.
 - [ ] **M5 Simulator**: bots drive the full lifecycle headlessly; E2E "≥3 trips completed" passes.
@@ -63,8 +63,9 @@ Each milestone ends with a demoable result and green tests for everything built 
 - [x] **2.4 Gateway: verify + permissions + proxy.** `JwtVerifyMiddleware` (jose, JWKS cache, refetch on unknown `kid`), route-permission table, `http-proxy-middleware` per service, `/internal/*` → 404, correlation id injection, public routes (register/login/refresh/JWKS).
   - Deps: 2.2. Tests: Unit › gateway; Integration › gateway (401, internal not routable, correlation id).
   - Done 2026-10-23: route table in `apps/gateway/src/routes.ts`; `/api/auth/token` not exposed; JWKS outage → 503; Authorization stripped on public routes; accepted `braces` advisory (unreachable, documented in design).
-- [ ] **2.5 Compose wiring for M2.** user + gateway services with healthchecks/`depends_on`; only 8080 published.
+- [x] **2.5 Compose wiring for M2.** user + gateway services with healthchecks/`depends_on`; only 8080 published.
   - Deps: 2.4. Validation (M2 demo): register rider → login → `GET /api/users/me` via gateway; direct call to user:3001 from host fails. Tests: Integration › compose ports.
+  - Done 2026-10-23: one root `Dockerfile` (`--build-arg APP=<name>`, node:22.23.4-bookworm-slim, prod deps only, non-root, ~282 MB); `infra/services/<app>.compose.yml` pattern; `tests/e2e/m2.e2e.spec.ts` covers the demo, host isolation and correlation-id propagation. Adding a service: add its `package.json` COPY line to the Dockerfile, a compose file, the include, `SERVICE_ENV` in `tests/infra/stack.ts`, and the ports test.
 
 ### M3: Geo & live state
 

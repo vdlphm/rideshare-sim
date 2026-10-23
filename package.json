@@ -19,9 +19,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "infra:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d --wait",
+    "infra:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d --build --wait",
     "infra:down": "docker compose -f infra/docker-compose.yml --env-file .env down",
-    "infra:reset": "docker compose -f infra/docker-compose.yml --env-file .env down -v"
+    "infra:reset": "docker compose -f infra/docker-compose.yml --env-file .env down -v",
+    "stack:logs": "docker compose -f infra/docker-compose.yml --env-file .env logs -f --tail=100"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

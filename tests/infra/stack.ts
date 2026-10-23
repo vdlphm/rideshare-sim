@@ -15,6 +15,18 @@ export const PASSWORDS = {
   REDIS_ROUTING_PASSWORD: 'rd-routing-test',
 } as const;
 
+/** Test values for everything the application services need from the environment. */
+export const SERVICE_ENV = {
+  ADMIN_EMAIL: 'admin@example.com',
+  ADMIN_PASSWORD: 'admin-pass-1',
+  GATEWAY_CLIENT_SECRET: 'gateway-secret',
+  RIDER_CLIENT_SECRET: 'rider-secret',
+  DRIVER_CLIENT_SECRET: 'driver-secret',
+  TRIP_CLIENT_SECRET: 'trip-secret',
+  MATCHING_CLIENT_SECRET: 'matching-secret',
+  SIMULATOR_CLIENT_SECRET: 'simulator-secret',
+} as const;
+
 /**
  * Starts only postgres and redis from the real compose file. No host ports are published,
  * so tests run psql / redis-cli with `exec` inside the containers instead of using a
@@ -23,7 +35,7 @@ export const PASSWORDS = {
 export async function startStack(suffix: string): Promise<StartedDockerComposeEnvironment> {
   return new DockerComposeEnvironment(COMPOSE_DIR, COMPOSE_FILE)
     .withProjectName(`rideshare-it-${suffix}-${process.pid}`)
-    .withEnvironment({ ...PASSWORDS })
+    .withEnvironment({ ...PASSWORDS, ...SERVICE_ENV })
     .withWaitStrategy('postgres-1', Wait.forHealthCheck())
     .withWaitStrategy('redis-1', Wait.forHealthCheck())
     .withStartupTimeout(180_000)

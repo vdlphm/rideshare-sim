@@ -1,0 +1,40 @@
+services:
+  user:
+    build:
+      context: ../..
+      args:
+        APP: user
+    image: rideshare/user:dev
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://user_service:${USER_SERVICE_DB_PASSWORD:?set USER_SERVICE_DB_PASSWORD in .env}@postgres:5432/ridesharing
+      KEYS_DIR: /keys
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ACCESS_TOKEN_TTL_S: ${ACCESS_TOKEN_TTL_S:-900}
+      REFRESH_TOKEN_TTL_S: ${REFRESH_TOKEN_TTL_S:-604800}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      GATEWAY_CLIENT_SECRET: ${GATEWAY_CLIENT_SECRET:?set GATEWAY_CLIENT_SECRET in .env}
+      RIDER_CLIENT_SECRET: ${RIDER_CLIENT_SECRET:?set RIDER_CLIENT_SECRET in .env}
+      DRIVER_CLIENT_SECRET: ${DRIVER_CLIENT_SECRET:?set DRIVER_CLIENT_SECRET in .env}
+      TRIP_CLIENT_SECRET: ${TRIP_CLIENT_SECRET:?set TRIP_CLIENT_SECRET in .env}
+      MATCHING_CLIENT_SECRET: ${MATCHING_CLIENT_SECRET:?set MATCHING_CLIENT_SECRET in .env}
+      SIMULATOR_CLIENT_SECRET: ${SIMULATOR_CLIENT_SECRET:?set SIMULATOR_CLIENT_SECRET in .env}
+    volumes:
+      - user-keys:/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  user-keys:

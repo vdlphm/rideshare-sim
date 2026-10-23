@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+.git
+.worktrees
+.claude
+coverage
+.env
+.env.*
+!.env.example
+*.osm.pbf
+infra/osrm
+docs

@@ -6,3 +6,5 @@ include:
   - postgres/compose.yml
   - redis/compose.yml
   - osrm/compose.yml
+  - services/user.compose.yml
+  - services/gateway.compose.yml
