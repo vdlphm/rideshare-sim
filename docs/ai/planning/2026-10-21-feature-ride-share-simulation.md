@@ -14,7 +14,7 @@ Sources: requirements, design and testing docs dated 2026-10-21 for `ride-share-
 - [x] **M2 Identity & edge**: User service + gateway; a rider can register, log in and call a protected echo route through the gateway.
 - [x] **M3 Geo & live state**: Routing, Driver, Rider services; drivers go online and show up in `nearby`.
 - [x] **M4 Trips & matching**: Trip + Matching + sim clock; a scripted rider/driver pair completes a trip over HTTP.
-- [ ] **M5 Simulator**: bots drive the full lifecycle headlessly; E2E "≥3 trips completed" passes.
+- [x] **M5 Simulator**: bots drive the full lifecycle headlessly; E2E "≥3 trips completed" passes.
 - [ ] **M6 Live UI**: gateway WS poller + web app with map, controls, inspector, stats.
 - [ ] **M7 Hardening**: E2E suite, perf run, README; ready for review.
 
@@ -111,14 +111,18 @@ Each milestone ends with a demoable result and green tests for everything built 
 
 ### M5: Simulator
 
-- [ ] **5.1 Bot HTTP client.** Login/register, auto refresh before expiry, re-login on failure; talks to `http://gateway:8080`.
+- [x] **5.1 Bot HTTP client.** Login/register, auto refresh before expiry, re-login on failure; talks to `http://gateway:8080`.
   - Deps: 2.4, 4.1. Tests: Unit › simulator (client refresh with fake clock).
-- [ ] **5.2 Driver bots.** Pool `driver-NNN@sim.local`; state machine idle → offered → to pickup → arrived → in trip → idle; movement via `interpolateAlongRoute` on sim time; accept probability; driverCount scaling (retire idle only).
+  - Done 2026-10-25 (`d01a63e`, with 5.2/5.3): register-or-login, refresh before exp with rotated refresh tokens, one refresh+retry on 401.
+- [x] **5.2 Driver bots.** Pool `driver-NNN@sim.local`; state machine idle → offered → to pickup → arrived → in trip → idle; movement via `interpolateAlongRoute` on sim time; accept probability; driverCount scaling (retire idle only).
   - Deps: 5.1, 1.3, 4.6. Tests: Unit › simulator (bot state machine, accept probability, retire idle).
-- [ ] **5.3 Rider bots + spawner.** Pool `rider-NNN@sim.local`; spawn on sim-time interval with jitter; random snapped pickup/dropoff in spawn bbox (≥500 m); post position; request; poll trip; dispose; `POST /sim/riders` click-to-add.
+  - Done 2026-10-25 (`d01a63e`): pure `decide()` state machine; offer poll `clamp(15000/speed/5, 150, 1500)` ms; 3 s real heartbeat even when paused (stale sweeper is real time). Bug found in 5.4: `GET /drivers/me` 404 for never-online accounts blocked startup — fixed.
+- [x] **5.3 Rider bots + spawner.** Pool `rider-NNN@sim.local`; spawn on sim-time interval with jitter; random snapped pickup/dropoff in spawn bbox (≥500 m); post position; request; poll trip; dispose; `POST /sim/riders` click-to-add.
   - Deps: 5.1, 4.4. Tests: Unit › simulator (spawn scheduler).
-- [ ] **5.4 Headless E2E.** `test:e2e`: compose up → 10 drivers, 1 rider / 5 s, 10x → ≥3 trips `COMPLETED` in 2 real min; invariant query (no driver with two active trips); driverCount 0 → `NO_DRIVERS`; pause → no movement.
+  - Done 2026-10-25 (`d01a63e`): spawn interval is in **sim** seconds (at 10× a 5 s interval = 0.5 s real); click-to-add `POST /sim/riders` → 201 `{tripId}`; `bots` summary in `/internal/sim/state`.
+- [x] **5.4 Headless E2E.** `test:e2e`: compose up → 10 drivers, 1 rider / 5 s, 10x → ≥3 trips `COMPLETED` in 2 real min; invariant query (no driver with two active trips); driverCount 0 → `NO_DRIVERS`; pause → no movement.
   - Deps: 5.2, 5.3. Tests: E2E (all except click-to-add).
+  - Done 2026-10-25 `tests/e2e/m5.e2e.spec.ts`: 10 bots at 10×, ≥3 trips COMPLETED in ~40 s (budget 120 s), route-following, pause, driverCount 0, invariant. E2E files now run serially (`fileParallelism: false`): parallel full stacks stalled the 8 GB Docker VM on the dev laptop (4 of 7 runs).
 
 ### M6: Live UI
 

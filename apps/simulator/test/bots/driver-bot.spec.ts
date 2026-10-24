@@ -81,6 +81,15 @@ describe('driver start', () => {
     expect(bot.state.position).not.toBeNull();
   });
 
+  it('treats 404 from /drivers/me (never been online) as OFFLINE and goes online', async () => {
+    const api = new FakeDriverApi();
+    api.me = err(404, 'Driver not found');
+    const { bot } = make(api);
+    await runOnce(bot);
+    expect(api.calls[2]).toMatch(/^online:/);
+    expect(bot.phase).toBe('IDLE');
+  });
+
   it('backs off and retries when the gateway is down', async () => {
     const api = new FakeDriverApi();
     api.me = err(0, 'ECONNREFUSED');

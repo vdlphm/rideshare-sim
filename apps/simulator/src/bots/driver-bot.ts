@@ -6,7 +6,7 @@ import {
   type LngLat,
   type RoutePosition,
 } from '@rideshare/geo';
-import type { DriverApi, Result } from './bot-client';
+import type { DriverApi, DriverMe, Result } from './bot-client';
 import {
   OFFER_TTL_SIM_MS_DEFAULT,
   isRunning,
@@ -411,7 +411,12 @@ export class DriverBot implements Task {
       if (!acct.ok) return fail();
       this.s = { ...this.s, accountReady: true };
     }
-    const me = await this.api.driverMe();
+    const res = await this.api.driverMe();
+    // The driver service has no state for an account that never went online: it answers 404.
+    const me: Result<DriverMe> =
+      !res.ok && res.status === 404
+        ? { ok: true, status: 200, data: { status: 'OFFLINE', tripId: null } }
+        : res;
     if (!me.ok) return fail();
     const { status, tripId, lat, lng } = me.data;
     const known = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null;

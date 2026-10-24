@@ -4,7 +4,11 @@ import { defineConfig, type ViteUserConfig } from 'vitest/config';
 
 const ignored = ['**/node_modules/**', '**/dist/**'];
 
-export function makeConfig(opts: { include: string[]; exclude?: string[] }): ViteUserConfig {
+export function makeConfig(opts: {
+  include: string[];
+  exclude?: string[];
+  fileParallelism?: boolean;
+}): ViteUserConfig {
   return defineConfig({
     // SWC emits decorator metadata, which NestJS DI needs (esbuild does not).
     plugins: [
@@ -30,6 +34,7 @@ export function makeConfig(opts: { include: string[]; exclude?: string[] }): Vit
       globals: false,
       environment: 'node',
       include: opts.include,
+      fileParallelism: opts.fileParallelism ?? true,
       exclude: [...ignored, ...(opts.exclude ?? [])],
       coverage: {
         provider: 'v8',
