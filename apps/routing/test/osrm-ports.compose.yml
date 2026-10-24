@@ -1,0 +1,5 @@
+# Test-only override: publishes OSRM on a random host port (infra/osrm/compose.yml publishes none).
+services:
+  osrm:
+    ports:
+      - '5000'

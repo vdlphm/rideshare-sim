@@ -1,0 +1,12 @@
+{
+  "code": "Ok",
+  "waypoints": [
+    {
+      "hint": "2BIAgP___38JAAAADQAAAAAAAACpAAAAN2rTQMUhKUAAAAAAHH_yQgkAAAANAAAAAAAAAKkAAABfAAAArzS1-FF31gLINLX4ZHfWAgAAjxN6DiCr",
+      "nodes": [0, 825293232],
+      "distance": 2.827300801,
+      "name": "Pike Place",
+      "location": [-122.342225, 47.609681]
+    }
+  ]
+}

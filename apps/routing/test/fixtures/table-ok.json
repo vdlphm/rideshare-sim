@@ -1,0 +1,26 @@
+{
+  "code": "Ok",
+  "destinations": [
+    {
+      "hint": "4YAAgP___38MAAAADAAAAAwAAADYAAAA2YscQAAAAABHnx9AXVsyQgYAAAAGAAAABgAAAGoAAABfAAAAEBm1-Fmg1gIMGbX4lKHWAgEAjxF6DiCr",
+      "distance": 35.023942939,
+      "name": "Space Needle Loop",
+      "location": [-122.349296, 47.620185]
+    },
+    {
+      "hint": "-kwAgBNNAIAAAAAABQAAAAAAAAASAAAAAAAAAPJp_D8AAAAAnz7rQAAAAAAFAAAAAAAAABIAAABfAAAAEVy1-CZq1gI8XLX4uGnWAgAAfxR6DiCr",
+      "distance": 12.649998317,
+      "name": "",
+      "location": [-122.332143, 47.60631]
+    }
+  ],
+  "durations": [[236.7, 211]],
+  "sources": [
+    {
+      "hint": "2BIAgP___38JAAAADQAAAAAAAACpAAAAN2rTQMUhKUAAAAAAHH_yQgkAAAANAAAAAAAAAKkAAABfAAAArzS1-FF31gLINLX4ZHfWAgAAjxN6DiCr",
+      "distance": 2.827300801,
+      "name": "Pike Place",
+      "location": [-122.342225, 47.609681]
+    }
+  ]
+}

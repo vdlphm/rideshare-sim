@@ -1,0 +1,15 @@
+{
+  "code": "Ok",
+  "durations": [
+    [236.7, null],
+    [null, 0]
+  ],
+  "sources": [
+    { "location": [-122.342225, 47.609681], "distance": 2.8 },
+    { "location": [-122.35, 47.61], "distance": 1 }
+  ],
+  "destinations": [
+    { "location": [-122.349296, 47.620185], "distance": 35 },
+    { "location": [-122.35, 47.61], "distance": 1 }
+  ]
+}
