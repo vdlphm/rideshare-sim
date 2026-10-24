@@ -63,6 +63,9 @@ export class ServiceTokenModule {
   static register(opts: ServiceTokenOptions): DynamicModule {
     return {
       module: ServiceTokenModule,
+      // Global: an app has one service identity, and modules without imports (e.g. SimClockModule)
+      // must be able to inject TOKEN_PROVIDER.
+      global: true,
       providers: [{ provide: TOKEN_PROVIDER, useValue: new ServiceTokenProvider(opts) }],
       exports: [TOKEN_PROVIDER],
     };
