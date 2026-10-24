@@ -40,7 +40,8 @@ const bearer = async (role: string) => ({ authorization: `Bearer ${await token(r
 beforeAll(async () => {
   [osrmEnv, redisContainer] = await Promise.all([
     new DockerComposeEnvironment(OSRM_COMPOSE_DIR, ['compose.yml', OSRM_PORT_OVERRIDE])
-      .withProjectName('routing-int-osrm')
+      // Unique per run: a fixed name lets concurrent runs (other worktrees, CI) recreate each other's containers.
+      .withProjectName(`routing-int-osrm-${process.pid}-${Date.now().toString(36)}`)
       .withWaitStrategy('osrm-1', Wait.forHealthCheck())
       .withStartupTimeout(300_000)
       .up(['osrm']),
