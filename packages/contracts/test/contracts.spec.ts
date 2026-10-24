@@ -309,7 +309,8 @@ describe('trip', () => {
 
 describe('matching', () => {
   it('validates matching payloads', () => {
-    ok(MatchRequestSchema, { tripId: id, pickup: p });
+    ok(MatchRequestSchema, { tripId: id, pickup: p, dropoff: p });
+    bad(MatchRequestSchema, { tripId: id, pickup: p });
     bad(MatchRequestSchema, { tripId: id });
     const offer = {
       id,

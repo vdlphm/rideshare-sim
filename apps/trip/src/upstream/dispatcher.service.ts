@@ -54,8 +54,12 @@ export class MatchingDispatcher implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Posts one match request; failures are logged (the sweep retries). */
-  async dispatch(trip: { id: string; pickup: LatLng }): Promise<boolean> {
-    const ok = await this.upstreams.requestMatch({ tripId: trip.id, pickup: trip.pickup });
+  async dispatch(trip: { id: string; pickup: LatLng; dropoff: LatLng }): Promise<boolean> {
+    const ok = await this.upstreams.requestMatch({
+      tripId: trip.id,
+      pickup: trip.pickup,
+      dropoff: trip.dropoff,
+    });
     if (ok) this.lastDispatched.set(trip.id, this.realNow());
     return ok;
   }

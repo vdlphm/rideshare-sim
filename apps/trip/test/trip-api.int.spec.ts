@@ -122,7 +122,7 @@ describe('lifecycle', () => {
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ tripId });
     expect(world.matching.calls).toHaveLength(1);
-    expect(world.matching.calls[0]!.body).toEqual({ tripId, pickup: A });
+    expect(world.matching.calls[0]!.body).toEqual({ tripId, pickup: A, dropoff: B });
 
     await setSimTime(2_005_000);
     const assigned = await assign(tripId, driverId);

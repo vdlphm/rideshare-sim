@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { LatLngSchema, OfferStatusSchema, SimTimeSchema, UuidSchema } from './common';
 
-export const MatchRequestSchema = z.object({ tripId: UuidSchema, pickup: LatLngSchema }).strict();
+export const MatchRequestSchema = z
+  .object({ tripId: UuidSchema, pickup: LatLngSchema, dropoff: LatLngSchema })
+  .strict();
 export type MatchRequest = z.infer<typeof MatchRequestSchema>;
 
 export const OfferSchema = z.object({

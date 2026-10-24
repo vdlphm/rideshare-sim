@@ -81,7 +81,7 @@ describe('create', () => {
       {
         method: 'POST',
         path: '/internal/match',
-        body: { tripId, pickup: trip.pickup },
+        body: { tripId, pickup: trip.pickup, dropoff: trip.dropoff },
       },
     ]);
   });
