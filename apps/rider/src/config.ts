@@ -6,6 +6,7 @@ export const riderEnvSchema = baseEnvSchema.extend({
   SERVICE_NAME: z.string().min(1).default('rider-service'),
   REDIS_URL: z.string().min(1),
   REDIS_KEY_PREFIX: z.string().min(2).default('rider:'),
+  TRIP_URL: z.string().min(1).default('http://trip:3004'),
   POSITION_TTL_S: z.coerce.number().int().positive().default(600),
 });
 
