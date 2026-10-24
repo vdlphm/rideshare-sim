@@ -3,9 +3,15 @@ import { ConfigService } from '@rideshare/common';
 import { defaultSimConfig, simulatorEnvSchema, type SimulatorEnv } from '../src/config';
 import { SimStore } from '../src/sim-store';
 
+const REQUIRED = {
+  NODE_ENV: 'test',
+  SIMULATOR_CLIENT_SECRET: 'secret',
+  SIM_BOT_PASSWORD: 'bot-password',
+};
+
 function make(env: Record<string, string> = {}) {
   let t = 1_000_000;
-  const values = simulatorEnvSchema.parse({ NODE_ENV: 'test', ...env });
+  const values = simulatorEnvSchema.parse({ ...REQUIRED, ...env });
   const store = new SimStore(new ConfigService<SimulatorEnv>(values), () => t);
   return { store, advance: (ms: number) => (t += ms), back: (ms: number) => (t -= ms) };
 }
@@ -107,7 +113,7 @@ describe('config defaults', () => {
 
   it('rejects invalid defaults', () => {
     const bad = (env: Record<string, string>) =>
-      defaultSimConfig(simulatorEnvSchema.parse({ NODE_ENV: 'test', ...env }));
+      defaultSimConfig(simulatorEnvSchema.parse({ ...REQUIRED, ...env }));
     expect(() => bad({ SIM_DEFAULT_SPEED: '11' })).toThrow();
     expect(() => bad({ SIM_DEFAULT_DRIVER_COUNT: '501' })).toThrow();
     expect(() => bad({ SIM_DEFAULT_SPAWN_INTERVAL_S: '0' })).toThrow();

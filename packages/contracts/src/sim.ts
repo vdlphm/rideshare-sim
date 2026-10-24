@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LatLngSchema, SimTimeSchema } from './common';
+import { LatLngSchema, SimTimeSchema, UuidSchema } from './common';
 
 export const SimConfigSchema = z
   .object({
@@ -26,3 +26,19 @@ export const AddRiderRequestSchema = z
   .object({ pickup: LatLngSchema, dropoff: LatLngSchema })
   .strict();
 export type AddRiderRequest = z.infer<typeof AddRiderRequestSchema>;
+
+export const AddRiderResponseSchema = z.object({ tripId: UuidSchema }).strict();
+export type AddRiderResponse = z.infer<typeof AddRiderResponseSchema>;
+
+const count = z.number().int().nonnegative();
+
+/** Bot activity summary returned by GET /internal/sim/state. */
+export const BotsSummarySchema = z
+  .object({
+    drivers: z
+      .object({ total: count, idle: count, toPickup: count, atPickup: count, inTrip: count })
+      .strict(),
+    riders: z.object({ active: count, waiting: count, riding: count }).strict(),
+  })
+  .strict();
+export type BotsSummary = z.infer<typeof BotsSummarySchema>;

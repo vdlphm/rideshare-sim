@@ -3,6 +3,8 @@ import {
   ACTIVE_TRIP_STATUSES,
   AcceptOfferResponseSchema,
   AddRiderRequestSchema,
+  AddRiderResponseSchema,
+  BotsSummarySchema,
   AssignTripRequestSchema,
   ClockStateSchema,
   CreateTripRequestSchema,
@@ -362,6 +364,14 @@ describe('sim', () => {
     bad(ClockStateSchema, { simTime: -1, speed: 1, paused: false });
     ok(AddRiderRequestSchema, { pickup: p, dropoff: q });
     bad(AddRiderRequestSchema, { pickup: p });
+    ok(AddRiderResponseSchema, { tripId: '3f2b8c1e-7a4d-4e9b-8c55-1d2e3f4a5b6c' });
+    bad(AddRiderResponseSchema, { tripId: 'nope' });
+    const bots = {
+      drivers: { total: 3, idle: 1, toPickup: 1, atPickup: 0, inTrip: 1 },
+      riders: { active: 2, waiting: 1, riding: 1 },
+    };
+    ok(BotsSummarySchema, bots);
+    bad(BotsSummarySchema, { ...bots, riders: { active: -1, waiting: 0, riding: 0 } });
   });
 });
 

@@ -22,7 +22,16 @@ const token = (sub: string, role: string) =>
 
 beforeAll(async () => {
   const ref = await Test.createTestingModule({
-    imports: [AppModule.forRoot({ NODE_ENV: 'test', LOG_LEVEL: 'silent', PORT: '0' })],
+    imports: [
+      AppModule.forRoot({
+        NODE_ENV: 'test',
+        LOG_LEVEL: 'silent',
+        PORT: '0',
+        SIM_BOTS_ENABLED: 'false',
+        SIMULATOR_CLIENT_SECRET: 'test-secret',
+        SIM_BOT_PASSWORD: 'bot-password',
+      }),
+    ],
   })
     .overrideProvider(CLOCK)
     .useValue(() => now)

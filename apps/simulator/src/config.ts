@@ -14,6 +14,17 @@ export const simulatorEnvSchema = baseEnvSchema.extend({
   SIM_DEFAULT_SPAWN_INTERVAL_S: z.coerce.number().default(3),
   SIM_DEFAULT_ACCEPT_PROBABILITY: z.coerce.number().default(0.9),
   SIM_START_PAUSED: boolish.default(false),
+  /** Bots log in through the gateway; /ready never depends on it (the gateway waits for us). */
+  GATEWAY_URL: z.string().min(1).default('http://gateway:8080'),
+  ROUTING_URL: z.string().min(1).default('http://routing:3006'),
+  USER_SERVICE_URL: z.string().min(1).default('http://user:3001'),
+  SIMULATOR_CLIENT_SECRET: z.string().min(1),
+  /** Shared password of all sim bot accounts (min 8 chars: registration requires it). */
+  SIM_BOT_PASSWORD: z.string().min(8),
+  SIM_BOTS_ENABLED: boolish.default(true),
+  SIM_MAX_ACTIVE_RIDERS: z.coerce.number().int().positive().default(100),
+  SIM_BOT_MAX_IN_FLIGHT: z.coerce.number().int().positive().default(20),
+  OFFER_TTL_SIM_MS: z.coerce.number().int().positive().default(15_000),
 });
 
 export type SimulatorEnv = z.infer<typeof simulatorEnvSchema>;

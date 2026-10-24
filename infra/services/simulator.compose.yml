@@ -12,7 +12,19 @@ services:
       SIM_DEFAULT_SPAWN_INTERVAL_S: ${SIM_DEFAULT_SPAWN_INTERVAL_S:-3}
       SIM_DEFAULT_ACCEPT_PROBABILITY: ${SIM_DEFAULT_ACCEPT_PROBABILITY:-0.9}
       SIM_START_PAUSED: ${SIM_START_PAUSED:-false}
+      SIMULATOR_CLIENT_SECRET: ${SIMULATOR_CLIENT_SECRET:?set SIMULATOR_CLIENT_SECRET in .env}
+      SIM_BOT_PASSWORD: ${SIM_BOT_PASSWORD:?set SIM_BOT_PASSWORD in .env}
+      SIM_BOTS_ENABLED: ${SIM_BOTS_ENABLED:-true}
+      SIM_MAX_ACTIVE_RIDERS: ${SIM_MAX_ACTIVE_RIDERS:-100}
+      OFFER_TTL_SIM_MS: ${OFFER_TTL_SIM_MS:-15000}
+      GATEWAY_URL: ${SIM_GATEWAY_URL:-http://gateway:8080}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+    # The bots call the gateway at runtime without depending on it: the gateway waits for us.
+    depends_on:
+      user:
+        condition: service_healthy
+      routing:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD

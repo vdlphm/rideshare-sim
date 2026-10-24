@@ -25,6 +25,9 @@ export const SERVICE_ENV = {
   TRIP_CLIENT_SECRET: 'trip-secret',
   MATCHING_CLIENT_SECRET: 'matching-secret',
   SIMULATOR_CLIENT_SECRET: 'simulator-secret',
+  SIM_BOT_PASSWORD: 'sim-bot-password',
+  // Scripted tests drive the API themselves; the bot E2E turns this back on.
+  SIM_BOTS_ENABLED: 'false',
 } as const;
 
 /**
