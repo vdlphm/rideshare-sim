@@ -40,7 +40,7 @@ export const TripDetailSchema = TripSchema.extend({ events: z.array(TripEventSch
 export type TripDetail = z.infer<typeof TripDetailSchema>;
 
 export const AssignTripRequestSchema = z
-  .object({ driverId: UuidSchema, offerId: UuidSchema })
+  .object({ driverId: UuidSchema, offerId: UuidSchema, driverPosition: LatLngSchema })
   .strict();
 export type AssignTripRequest = z.infer<typeof AssignTripRequestSchema>;
 

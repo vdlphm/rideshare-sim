@@ -1,3 +1,4 @@
+import { ConflictException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { DRIZZLE, type Db } from '@rideshare/common';
@@ -98,6 +99,10 @@ beforeAll(async () => {
         LOG_LEVEL: 'silent',
         PORT: '0',
         DATABASE_URL: `postgres://trip_service:${TRIP_PW}@${host}:${port}/ridesharing`,
+        TRIP_CLIENT_SECRET: 'test-secret',
+        // Unreachable on purpose: the repository tests do not call any upstream.
+        USER_SERVICE_URL: 'http://127.0.0.1:1',
+        SIMULATOR_URL: 'http://127.0.0.1:1',
       }),
     ],
   }).compile();
@@ -196,10 +201,9 @@ describe('partial unique indexes', () => {
       () => undefined,
       (e: unknown) => e,
     );
-    expect(uniqueViolation(err)).toMatchObject({
-      code: '23505',
-      constraint: 'trips_rider_non_terminal_uq',
-    });
+    // The repository maps the rider unique violation to a 409.
+    expect(err).toBeInstanceOf(ConflictException);
+    expect((err as Error).message).toBe('rider already has an active trip');
 
     await setStatus(first.id, 'COMPLETED');
     await expect(repo.insert(newTrip(riderId))).resolves.toBeDefined();

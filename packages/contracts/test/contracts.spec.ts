@@ -283,8 +283,15 @@ describe('trip', () => {
     bad(TripEventSchema, { ...event, atReal: 'yesterday' });
     ok(TripDetailSchema, { ...trip, events: [event] });
     bad(TripDetailSchema, trip);
-    ok(AssignTripRequestSchema, { driverId: id, offerId: id2 });
-    bad(AssignTripRequestSchema, { driverId: id });
+    const driverPosition = { lat: 47.6, lng: -122.3 };
+    ok(AssignTripRequestSchema, { driverId: id, offerId: id2, driverPosition });
+    bad(AssignTripRequestSchema, { driverId: id, offerId: id2 });
+    bad(AssignTripRequestSchema, { driverId: id, driverPosition });
+    bad(AssignTripRequestSchema, {
+      driverId: id,
+      offerId: id2,
+      driverPosition: { lat: 91, lng: 0 },
+    });
     const stats = {
       waitingRiders: 0,
       activeTrips: 1,
