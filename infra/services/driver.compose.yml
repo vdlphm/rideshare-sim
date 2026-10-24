@@ -11,9 +11,14 @@ services:
       REDIS_KEY_PREFIX: 'driver:'
       STALE_AFTER_MS: ${STALE_AFTER_MS:-60000}
       SWEEP_INTERVAL_MS: ${SWEEP_INTERVAL_MS:-5000}
+      DRIVER_CLIENT_SECRET: ${DRIVER_CLIENT_SECRET:?set DRIVER_CLIENT_SECRET in .env}
+      RECONCILE_INTERVAL_MS: ${RECONCILE_INTERVAL_MS:-30000}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+    # Calls trip (reconcile) at runtime without depending on it: trip depends on driver.
     depends_on:
       redis:
+        condition: service_healthy
+      user:
         condition: service_healthy
     healthcheck:
       test:

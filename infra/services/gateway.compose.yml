@@ -23,6 +23,12 @@ services:
         condition: service_healthy
       routing:
         condition: service_healthy
+      trip:
+        condition: service_healthy
+      matching:
+        condition: service_healthy
+      simulator:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD

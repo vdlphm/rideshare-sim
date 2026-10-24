@@ -1,0 +1,38 @@
+services:
+  trip:
+    build:
+      context: ../..
+      args:
+        APP: trip
+    image: rideshare/trip:dev
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://trip_service:${TRIP_SERVICE_DB_PASSWORD:?set TRIP_SERVICE_DB_PASSWORD in .env}@postgres:5432/ridesharing
+      TRIP_CLIENT_SECRET: ${TRIP_CLIENT_SECRET:?set TRIP_CLIENT_SECRET in .env}
+      DISPATCH_SWEEP_MS: ${DISPATCH_SWEEP_MS:-10000}
+      DISPATCH_RETRY_AFTER_SIM_MS: ${DISPATCH_RETRY_AFTER_SIM_MS:-15000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    # Trip and matching call each other at runtime, so neither waits for the other (no cycle):
+    # matching waits for trip, and trip's dispatcher sweep re-sends REQUESTED trips if matching
+    # was not up yet.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      user:
+        condition: service_healthy
+      simulator:
+        condition: service_healthy
+      routing:
+        condition: service_healthy
+      driver:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3004/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s

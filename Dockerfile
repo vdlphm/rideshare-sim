@@ -17,6 +17,9 @@ COPY apps/gateway/package.json apps/gateway/
 COPY apps/routing/package.json apps/routing/
 COPY apps/driver/package.json apps/driver/
 COPY apps/rider/package.json apps/rider/
+COPY apps/trip/package.json apps/trip/
+COPY apps/matching/package.json apps/matching/
+COPY apps/simulator/package.json apps/simulator/
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY tsconfig.base.json ./
 COPY packages packages

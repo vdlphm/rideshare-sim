@@ -13,7 +13,7 @@ Sources: requirements, design and testing docs dated 2026-10-21 for `ride-share-
 - [x] **M1 Foundation**: monorepo, shared packages, infra (Postgres/Redis/OSRM) up with isolation enforced.
 - [x] **M2 Identity & edge**: User service + gateway; a rider can register, log in and call a protected echo route through the gateway.
 - [x] **M3 Geo & live state**: Routing, Driver, Rider services; drivers go online and show up in `nearby`.
-- [ ] **M4 Trips & matching**: Trip + Matching + sim clock; a scripted rider/driver pair completes a trip over HTTP.
+- [x] **M4 Trips & matching**: Trip + Matching + sim clock; a scripted rider/driver pair completes a trip over HTTP.
 - [ ] **M5 Simulator**: bots drive the full lifecycle headlessly; E2E "≥3 trips completed" passes.
 - [ ] **M6 Live UI**: gateway WS poller + web app with map, controls, inspector, stats.
 - [ ] **M7 Hardening**: E2E suite, perf run, README; ready for review.
@@ -84,22 +84,30 @@ Each milestone ends with a demoable result and green tests for everything built 
 
 ### M4: Trips & matching
 
-- [ ] **4.1 Simulator: clock only.** Simulator app skeleton with clock (speed/pause), `GET /internal/clock`, `GET/PUT /sim/config` (admin), `/internal/sim/state`.
+- [x] **4.1 Simulator: clock only.** Simulator app skeleton with clock (speed/pause), `GET /internal/clock`, `GET/PUT /sim/config` (admin), `/internal/sim/state`.
   - Deps: 1.4, 1.5. Tests: Unit › SimClock (server side).
-- [ ] **4.2 Trip service: domain + schema.** `trip_service` migrations (PostGIS columns, partial unique indexes, `trip_events`, `version`); pure `transition()` state machine.
+  - Done 2026-10-24 (`aaf7782`): lazily computed clock re-based on speed/pause changes; `SimStore.onChange` for M5 bots.
+- [x] **4.2 Trip service: domain + schema.** `trip_service` migrations (PostGIS columns, partial unique indexes, `trip_events`, `version`); pure `transition()` state machine.
   - Deps: 1.6, 1.7. Tests: Unit › trip — state machine; Integration › migrations.
-- [ ] **4.3 Trip service: APIs.** `POST /internal/trips` (rider from forwarded token; snap + route via Routing; call Matching), `GET /trips/:id` (party/admin), driver `arrive/start/complete`, internal `assign` (optimistic version, 409s), `no-drivers`, `unassign` (MATCHED only), `GET /internal/trips/active`, `/internal/trips/stats`; Driver status calls with retry; sim-time timestamps.
+  - Done 2026-10-24 (`69f5797`): PostGIS qualified as `postgis.*` (pool search_path is the service schema only); route durations stored as `double precision[]`.
+- [x] **4.3 Trip service: APIs.** `POST /internal/trips` (rider from forwarded token; snap + route via Routing; call Matching), `GET /trips/:id` (party/admin), driver `arrive/start/complete`, internal `assign` (optimistic version, 409s), `no-drivers`, `unassign` (MATCHED only), `GET /internal/trips/active`, `/internal/trips/stats`; Driver status calls with retry; sim-time timestamps.
   - Deps: 4.1, 4.2, 3.1, 3.2. Tests: Integration › trip (create, concurrent assign, busy driver, retry, stats formulas, riderId from token).
-- [ ] **4.4 Rider service: ride request.** `POST /riders/me/rides` (pickup defaults to `rider:pos`, 422 if none; forwards rider token; 409 active trip).
+  - Done 2026-10-24 (`9f428c9`, `2d6f1e6`): fixed common `ServiceTokenModule` not being visible to `SimClockModule` (now global); `AssignTripRequest` gained `driverPosition`; dispatcher sweep re-dispatches REQUESTED trips.
+- [x] **4.4 Rider service: ride request.** `POST /riders/me/rides` (pickup defaults to `rider:pos`, 422 if none; forwards rider token; 409 active trip).
   - Deps: 3.3, 4.3. Tests: Integration › rider (default pickup, 409, body riderId ignored).
-- [ ] **4.5 Matching service: jobs + offers.** `matching_service` migrations (offers, match_jobs); `POST /internal/match` (idempotent, 202); algorithm (radius widen, ETA rank via table, Redis lock, declined set); sweeper on sim clock (expiry, 60 sim-s give-up); resume ACTIVE jobs on boot.
+  - Done 2026-10-24 (`4474e10`): pickup defaults to the rider's current position; rider token forwarded to trip.
+- [x] **4.5 Matching service: jobs + offers.** `matching_service` migrations (offers, match_jobs); `POST /internal/match` (idempotent, 202); algorithm (radius widen, ETA rank via table, Redis lock, declined set); sweeper on sim clock (expiry, 60 sim-s give-up); resume ACTIVE jobs on boot.
   - Deps: 4.1, 4.3, 3.1, 3.2. Tests: Unit › matching — algorithm; Integration › matching (idempotent, race, resume, decline/timeout fallback, offline mid-offer).
-- [ ] **4.6 Matching: driver APIs.** `GET /offers/me`, `POST /offers/:id/accept` (→ Trip assign; 410/409), `decline`.
+  - Done 2026-10-24 (`e8d43ca`, with 4.6): `MatchRequest` gained `dropoff`; owner-only lock release/refresh; per-trip mutex; `IDLE_RETRY_MS` throttles waiting jobs.
+- [x] **4.6 Matching: driver APIs.** `GET /offers/me`, `POST /offers/:id/accept` (→ Trip assign; 410/409), `decline`.
   - Deps: 4.5. Tests: Integration › matching (`/offers/me` scoping).
-- [ ] **4.7 Driver: trip-aware offline + reconcile.** Offline with MATCHED → Trip unassign; ARRIVED/IN_PROGRESS → 409; reconcile job vs `/internal/trips/active` every 30 s.
+  - Done 2026-10-24 (`e8d43ca`): accept holds the per-trip mutex across the trip call (double accept → one 200, one 410); others' offers → 404.
+- [x] **4.7 Driver: trip-aware offline + reconcile.** Offline with MATCHED → Trip unassign; ARRIVED/IN_PROGRESS → 409; reconcile job vs `/internal/trips/active` every 30 s.
   - Deps: 4.3, 3.2. Tests: Integration › driver (offline cases, reconcile).
-- [ ] **4.8 Scripted lifecycle test.** Integration test driving one rider + one driver through every state via the gateway (no bots).
+  - Done 2026-10-24 (`9f07b8c`): guarded `offlineAfterUnassign` Lua op; stale ON_TRIP drivers unassigned when MATCHED; 30 s reconcile job.
+- [x] **4.8 Scripted lifecycle test.** Integration test driving one rider + one driver through every state via the gateway (no bots).
   - Deps: 4.4–4.7. Validation (M4 demo): test green; trip reaches `COMPLETED`.
+  - Done 2026-10-24 compose for trip/matching/simulator (trip starts before matching; no depends_on cycle), `tests/e2e/m4.e2e.spec.ts` (happy path, no drivers, decline → next driver, offline rematch, invariant). Also `225f421`: unique compose project name in the routing integration test (parallel runs collided).
 
 ### M5: Simulator
 

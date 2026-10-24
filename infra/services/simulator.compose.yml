@@ -1,0 +1,25 @@
+services:
+  simulator:
+    build:
+      context: ../..
+      args:
+        APP: simulator
+    image: rideshare/simulator:dev
+    restart: unless-stopped
+    environment:
+      SIM_DEFAULT_SPEED: ${SIM_DEFAULT_SPEED:-1}
+      SIM_DEFAULT_DRIVER_COUNT: ${SIM_DEFAULT_DRIVER_COUNT:-50}
+      SIM_DEFAULT_SPAWN_INTERVAL_S: ${SIM_DEFAULT_SPAWN_INTERVAL_S:-3}
+      SIM_DEFAULT_ACCEPT_PROBABILITY: ${SIM_DEFAULT_ACCEPT_PROBABILITY:-0.9}
+      SIM_START_PAUSED: ${SIM_START_PAUSED:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3007/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s

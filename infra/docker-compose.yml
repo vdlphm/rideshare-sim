@@ -8,6 +8,9 @@ include:
   - osrm/compose.yml
   - services/user.compose.yml
   - services/routing.compose.yml
+  - services/simulator.compose.yml
   - services/driver.compose.yml
+  - services/trip.compose.yml
+  - services/matching.compose.yml
   - services/rider.compose.yml
   - services/gateway.compose.yml

@@ -1,0 +1,44 @@
+services:
+  matching:
+    build:
+      context: ../..
+      args:
+        APP: matching
+    image: rideshare/matching:dev
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://matching_service:${MATCHING_SERVICE_DB_PASSWORD:?set MATCHING_SERVICE_DB_PASSWORD in .env}@postgres:5432/ridesharing
+      REDIS_URL: redis://matching:${REDIS_MATCHING_PASSWORD:?set REDIS_MATCHING_PASSWORD in .env}@redis:6379/0
+      REDIS_KEY_PREFIX: 'matching:'
+      MATCHING_CLIENT_SECRET: ${MATCHING_CLIENT_SECRET:?set MATCHING_CLIENT_SECRET in .env}
+      SWEEP_INTERVAL_MS: ${MATCHING_SWEEP_INTERVAL_MS:-250}
+      OFFER_TTL_SIM_MS: ${OFFER_TTL_SIM_MS:-15000}
+      GIVE_UP_SIM_MS: ${GIVE_UP_SIM_MS:-60000}
+      LOCK_TTL_MS: ${LOCK_TTL_MS:-15000}
+      IDLE_RETRY_MS: ${IDLE_RETRY_MS:-1000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user:
+        condition: service_healthy
+      simulator:
+        condition: service_healthy
+      routing:
+        condition: service_healthy
+      driver:
+        condition: service_healthy
+      trip:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3005/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
