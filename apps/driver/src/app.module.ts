@@ -7,6 +7,10 @@ import {
   HealthController,
   LoggingModule,
   REDIS_READINESS,
+  ServiceTokenModule,
+  TOKEN_PROVIDER,
+  createHttpClient,
+  type TokenProvider,
   READINESS_CHECKS,
   RedisModule,
   defineConfig,
@@ -18,7 +22,9 @@ import { driverEnvSchema } from './config';
 import { DriversController, InternalDriversController } from './driver.controller';
 import { DriverService } from './driver.service';
 import { DriverStore } from './driver.store';
+import { ReconcileJob } from './reconcile.service';
 import { StaleSweeper } from './sweeper.service';
+import { HttpTripGateway, TRIP_HTTP, TripGateway } from './trip.gateway';
 
 /** /health + /ready, with the Redis check from RedisModule. */
 @Module({
@@ -45,15 +51,37 @@ export class AppModule {
         ErrorsModule,
         AuthContextModule,
         RedisModule.forRoot({ url: cfg.REDIS_URL, keyPrefix: cfg.REDIS_KEY_PREFIX }),
+        ServiceTokenModule.register({
+          userServiceUrl: cfg.USER_SERVICE_URL,
+          clientId: 'driver',
+          clientSecret: cfg.DRIVER_CLIENT_SECRET,
+        }),
         DriverHealthModule,
       ],
       controllers: [DriversController, InternalDriversController],
       providers: [
         { provide: APP_PIPE, useClass: ZodValidationPipe },
         { provide: CLOCK, useValue: () => Date.now() },
+        {
+          provide: TRIP_HTTP,
+          inject: [TOKEN_PROVIDER],
+          useFactory: (tokenProvider: TokenProvider) =>
+            createHttpClient({
+              baseUrl: cfg.TRIP_URL,
+              service: 'trip',
+              auth: 'service',
+              tokenProvider,
+            }),
+        },
+        {
+          provide: TripGateway,
+          inject: [TRIP_HTTP],
+          useFactory: (h: never) => new HttpTripGateway(h),
+        },
         DriverStore,
         DriverService,
         StaleSweeper,
+        ReconcileJob,
       ],
     };
   }

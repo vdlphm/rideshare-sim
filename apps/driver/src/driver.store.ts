@@ -5,7 +5,7 @@ import type { Redis } from 'ioredis';
 import { DRIVER_TRANSITION_LUA } from './driver.scripts';
 
 export type TransitionCode =
-  'OK' | 'NOT_FOUND' | 'NOT_ONLINE' | 'ON_TRIP' | 'SWEPT' | 'FRESH' | 'SKIPPED';
+  'OK' | 'NOT_FOUND' | 'NOT_ONLINE' | 'ON_TRIP' | 'SWEPT' | 'FRESH' | 'SKIPPED' | 'CHANGED';
 
 export interface TransitionResult {
   code: TransitionCode;
@@ -81,6 +81,10 @@ export class DriverStore {
   goOffline(id: string, now: number) {
     return this.run(id, 'offline', now, 0);
   }
+  /** OFFLINE only if the driver is still ON_TRIP with `tripId`; otherwise code CHANGED, untouched. */
+  offlineAfterUnassign(id: string, tripId: string, now: number) {
+    return this.run(id, 'offlineAfterUnassign', now, 0, tripId);
+  }
   updateLocation(id: string, lat: number, lng: number, heading: number, now: number) {
     return this.run(id, 'location', now, 0, lat, lng, heading);
   }
@@ -110,7 +114,7 @@ export class DriverStore {
     return this.getMany(ids);
   }
 
-  private async getMany(ids: string[]): Promise<DriverState[]> {
+  async getMany(ids: string[]): Promise<DriverState[]> {
     if (ids.length === 0) return [];
     const pipe = this.redis.pipeline();
     for (const id of ids) pipe.hgetall(keys.state(id));

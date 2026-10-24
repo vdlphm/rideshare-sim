@@ -9,7 +9,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module';
 import { CLOCK } from '../src/clock';
 import { StaleSweeper } from '../src/sweeper.service';
+import { FakeTripService, FakeUserService } from './fake-services';
 
+const fakeUser = new FakeUserService();
+const fakeTrip = new FakeTripService();
 let container: StartedRedisContainer;
 let raw: Redis; // unprefixed: sees the real keys
 let app: INestApplication;
@@ -54,6 +57,7 @@ const inGeo = async (id: string) => (await raw.zscore('driver:geo:available', id
 
 beforeAll(async () => {
   container = await new RedisContainer('redis:7.4').start();
+  await Promise.all([fakeUser.start(), fakeTrip.start()]);
   const url = container.getConnectionUrl();
   raw = new Redis(url);
   const ref = await Test.createTestingModule({
@@ -66,6 +70,10 @@ beforeAll(async () => {
         REDIS_KEY_PREFIX: 'driver:',
         STALE_AFTER_MS: '60000',
         SWEEP_INTERVAL_MS: '3600000', // sweeper driven manually
+        RECONCILE_INTERVAL_MS: '3600000',
+        TRIP_URL: fakeTrip.url,
+        USER_SERVICE_URL: fakeUser.url,
+        DRIVER_CLIENT_SECRET: 'test-secret',
       }),
     ],
   })
@@ -81,6 +89,7 @@ afterAll(async () => {
   await app?.close();
   await raw?.quit();
   await container?.stop();
+  await Promise.all([fakeUser.stop(), fakeTrip.stop()]);
 });
 
 describe('driver service (redis)', () => {

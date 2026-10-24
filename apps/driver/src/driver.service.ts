@@ -1,8 +1,10 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@rideshare/common';
@@ -17,6 +19,7 @@ import type {
 import { CLOCK, type Clock } from './clock';
 import type { DriverEnv } from './config';
 import { DriverStore, type TransitionResult } from './driver.store';
+import { TripGateway } from './trip.gateway';
 
 /** Redis GEO only accepts latitudes within this range. */
 const GEO_MAX_LAT = 85.05112878;
@@ -29,10 +32,12 @@ function assertGeoLat(lat: number): void {
 
 @Injectable()
 export class DriverService {
+  private readonly logger = new Logger(DriverService.name);
   private readonly staleAfterMs: number;
 
   constructor(
     private readonly store: DriverStore,
+    private readonly trips: TripGateway,
     @Inject(CLOCK) private readonly clock: Clock,
     config: ConfigService<DriverEnv>,
   ) {
@@ -50,9 +55,32 @@ export class DriverService {
   }
 
   async goOffline(id: string): Promise<DriverState> {
+    const current = await this.store.get(id);
+    if (current?.status === 'ON_TRIP' && current.tripId) {
+      return this.offlineFromTrip(id, current.tripId);
+    }
     const r = await this.store.goOffline(id, this.clock());
     if (r.code === 'ON_TRIP') throw new ConflictException('Finish your trip first');
     return this.ok(r);
+  }
+
+  /** ON_TRIP: Trip must release the driver first (MATCHED only); then OFFLINE if nothing changed. */
+  private async offlineFromTrip(id: string, tripId: string): Promise<DriverState> {
+    let outcome;
+    try {
+      outcome = await this.trips.unassign(tripId, 'driver_offline');
+    } catch (err) {
+      this.logger.warn(`trip unassign failed for driver ${id}, trip ${tripId}: ${String(err)}`);
+      throw new BadGatewayException('Trip service unavailable');
+    }
+    if (outcome === 'CONFLICT') throw new ConflictException('Finish your trip first');
+    const r = await this.store.offlineAfterUnassign(id, tripId, this.clock());
+    if (r.code === 'OK') return this.ok(r);
+    // The driver changed meanwhile. If the released trip already freed it, go offline normally.
+    if (r.state && r.state.status !== 'ON_TRIP') {
+      return this.ok(await this.store.goOffline(id, this.clock()));
+    }
+    throw new ConflictException('Finish your trip first');
   }
 
   async updateLocation(id: string, body: DriverLocationUpdate): Promise<void> {

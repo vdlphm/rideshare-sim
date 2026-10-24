@@ -6,11 +6,13 @@
  * [3] online set. ARGV (not prefixed): op, driverId, nowMs, staleAfterMs, then op-specific args.
  *
  * Reply: [code, status, tripId, lat, lng, heading, ts] with every field a string; `code` is
- * OK | NOT_FOUND | NOT_ONLINE | ON_TRIP (conflict) | SWEPT | FRESH | SKIPPED.
+ * OK | NOT_FOUND | NOT_ONLINE | ON_TRIP (conflict) | SWEPT | FRESH | SKIPPED | CHANGED.
  *
  * Ops:
  *   online   lat lng          AVAILABLE + position + GEO + online set; ON_TRIP keeps its status
  *   offline                   OFFLINE, out of GEO + online; refused with ON_TRIP while ON_TRIP
+ *   offlineAfterUnassign tripId  OFFLINE only if still ON_TRIP with that same tripId (the trip was just
+ *                             unassigned); otherwise CHANGED and nothing is touched
  *   location lat lng heading  position/ts; GEO member only while AVAILABLE; needs a known, non-OFFLINE driver
  *   status   status tripId    trip-driven change: ON_TRIP leaves GEO; AVAILABLE re-enters GEO if the
  *                             position is fresh; OFFLINE leaves GEO + online. Idempotent.
@@ -54,6 +56,14 @@ if op == 'offline' then
   if status == 'ON_TRIP' then return snapshot('ON_TRIP') end
   goOffline()
   return snapshot('OK')
+end
+
+if op == 'offlineAfterUnassign' then
+  if status == 'ON_TRIP' and redis.call('HGET', state, 'tripId') == ARGV[5] then
+    goOffline()
+    return snapshot('OK')
+  end
+  return snapshot('CHANGED')
 end
 
 if op == 'location' then
