@@ -1,0 +1,27 @@
+services:
+  driver:
+    build:
+      context: ../..
+      args:
+        APP: driver
+    image: rideshare/driver:dev
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://driver:${REDIS_DRIVER_PASSWORD:?set REDIS_DRIVER_PASSWORD in .env}@redis:6379/0
+      REDIS_KEY_PREFIX: 'driver:'
+      STALE_AFTER_MS: ${STALE_AFTER_MS:-60000}
+      SWEEP_INTERVAL_MS: ${SWEEP_INTERVAL_MS:-5000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3003/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s

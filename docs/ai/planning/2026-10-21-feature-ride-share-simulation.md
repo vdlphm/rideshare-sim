@@ -12,7 +12,7 @@ Sources: requirements, design and testing docs dated 2026-10-21 for `ride-share-
 
 - [x] **M1 Foundation**: monorepo, shared packages, infra (Postgres/Redis/OSRM) up with isolation enforced.
 - [x] **M2 Identity & edge**: User service + gateway; a rider can register, log in and call a protected echo route through the gateway.
-- [ ] **M3 Geo & live state**: Routing, Driver, Rider services; drivers go online and show up in `nearby`.
+- [x] **M3 Geo & live state**: Routing, Driver, Rider services; drivers go online and show up in `nearby`.
 - [ ] **M4 Trips & matching**: Trip + Matching + sim clock; a scripted rider/driver pair completes a trip over HTTP.
 - [ ] **M5 Simulator**: bots drive the full lifecycle headlessly; E2E "≥3 trips completed" passes.
 - [ ] **M6 Live UI**: gateway WS poller + web app with map, controls, inspector, stats.
@@ -69,14 +69,18 @@ Each milestone ends with a demoable result and green tests for everything built 
 
 ### M3: Geo & live state
 
-- [ ] **3.1 Routing service.** `/internal/route`, `/internal/table`, `/internal/nearest` (150 m max snap) + admin debug routes; Redis cache (`routing:` prefix, rounded keys, TTL 1 h).
+- [x] **3.1 Routing service.** `/internal/route`, `/internal/table`, `/internal/nearest` (150 m max snap) + admin debug routes; Redis cache (`routing:` prefix, rounded keys, TTL 1 h).
   - Deps: 1.6, 1.8. Tests: Unit › routing; Integration › routing vs OSRM (Pike Place → Space Needle, Elliott Bay → 422).
-- [ ] **3.2 Driver service: live state.** `online/offline/location/GET me`; Lua script for atomic status (hash + GEO + online set); `GET /internal/drivers/nearby`, `/internal/drivers/online`, `PUT /internal/drivers/:id/status`; stale sweeper (60 s).
+  - Done 2026-10-24 (`952b225`): OSRM per-edge annotations omit the snapped partial edges (195.6 s vs 236.7 s route), so durations are rescaled to sum to `durationS`; OSRM snaps route/table endpoints anywhere (only `/nearest` enforces 150 m), so callers must snap first; OSRM errors → 422/502 (`BadGatewayException`, since `UpstreamError` would map to 500).
+- [x] **3.2 Driver service: live state.** `online/offline/location/GET me`; Lua script for atomic status (hash + GEO + online set); `GET /internal/drivers/nearby`, `/internal/drivers/online`, `PUT /internal/drivers/:id/status`; stale sweeper (60 s).
   - Deps: 1.5, 1.6. Tests: Integration › driver (live state, status idempotent, Lua atomicity, sweeper, AOF restart).
-- [ ] **3.3 Rider service: live state.** `POST/GET /riders/me/location` (`rider:pos:{sub}`, TTL 10 min); `GET /internal/riders/positions`. (Ride request lands in 4.4.)
+  - Done 2026-10-24 (`b93b7e5`): single `driverTransition` Lua script; offline while ON_TRIP → 409 (refined in 4.7); `|lat| > 85.05` → 400 (Redis GEO limit).
+- [x] **3.3 Rider service: live state.** `POST/GET /riders/me/location` (`rider:pos:{sub}`, TTL 10 min); `GET /internal/riders/positions`. (Ride request lands in 4.4.)
   - Deps: 1.5, 1.6. Tests: Integration › rider location.
-- [ ] **3.4 Compose + gateway routes for M3.** Add routing/driver/rider; permission entries.
+  - Done 2026-10-24 (`acab2bb`): `rider:pos:index` sorted set avoids SCAN for the poller; `RiderPositionsService.get()` ready for 4.4.
+- [x] **3.4 Compose + gateway routes for M3.** Add routing/driver/rider; permission entries.
   - Deps: 3.1–3.3, 2.4. Validation (M3 demo): two drivers go online via gateway → `nearby` from inside network returns them closest-first.
+  - Done 2026-10-24: `tests/e2e/m3.e2e.spec.ts`; gateway now `depends_on` rider/driver/routing healthy; real ACLs work unchanged (driver Lua via EVALSHA OK). Also on main: `043f60c` multer 2.5.0 override (GHSA-q7qp-rjg7-q26m).
 
 ### M4: Trips & matching
 

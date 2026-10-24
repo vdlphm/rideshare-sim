@@ -14,6 +14,9 @@ COPY packages/contracts/package.json packages/contracts/
 COPY packages/geo/package.json packages/geo/
 COPY apps/user/package.json apps/user/
 COPY apps/gateway/package.json apps/gateway/
+COPY apps/routing/package.json apps/routing/
+COPY apps/driver/package.json apps/driver/
+COPY apps/rider/package.json apps/rider/
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY tsconfig.base.json ./
 COPY packages packages

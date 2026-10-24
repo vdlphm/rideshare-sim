@@ -1,0 +1,32 @@
+services:
+  routing:
+    build:
+      context: ../..
+      args:
+        APP: routing
+    image: rideshare/routing:dev
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://routing:${REDIS_ROUTING_PASSWORD:?set REDIS_ROUTING_PASSWORD in .env}@redis:6379/0
+      REDIS_KEY_PREFIX: 'routing:'
+      OSRM_URL: http://osrm:5000
+      OSRM_TIMEOUT_MS: ${OSRM_TIMEOUT_MS:-3000}
+      ROUTE_CACHE_TTL_S: ${ROUTE_CACHE_TTL_S:-3600}
+      MAX_SNAP_M: ${MAX_SNAP_M:-150}
+      CACHE_TIMEOUT_MS: ${CACHE_TIMEOUT_MS:-250}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      redis:
+        condition: service_healthy
+      osrm:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3006/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
