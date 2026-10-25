@@ -7,3 +7,4 @@ export * from './trip';
 export * from './matching';
 export * from './sim';
 export * from './errors';
+export * from './ws';
