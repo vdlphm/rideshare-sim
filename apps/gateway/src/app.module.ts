@@ -8,13 +8,16 @@ import {
 import {
   ConfigModule,
   correlationMiddleware,
+  defineConfig,
   ErrorsModule,
   HealthController,
   LoggingModule,
   READINESS_CHECKS,
+  ServiceTokenModule,
   type ReadinessCheck,
 } from '@rideshare/common';
 import { gatewayEnvSchema } from './config';
+import { LiveModule } from './live/live.module';
 import { JwtVerifyMiddleware, ProxyMiddleware, RouteMiddleware } from './gateway.middleware';
 import { TokenVerifier, TokenVerifierModule } from './token-verifier';
 
@@ -65,14 +68,21 @@ class ProxyModule implements NestModule {
 @Module({})
 export class AppModule {
   static forRoot(env: NodeJS.ProcessEnv = process.env): DynamicModule {
+    const cfg = defineConfig(gatewayEnvSchema, env);
     return {
       module: AppModule,
       imports: [
         ConfigModule.forRoot({ schema: gatewayEnvSchema, env }),
+        ServiceTokenModule.register({
+          userServiceUrl: cfg.USER_SERVICE_URL,
+          clientId: 'gateway',
+          clientSecret: cfg.GATEWAY_CLIENT_SECRET,
+        }),
         LoggingModule.forRoot(),
         ErrorsModule,
         GatewayHealthModule,
         ProxyModule,
+        LiveModule,
       ],
     };
   }

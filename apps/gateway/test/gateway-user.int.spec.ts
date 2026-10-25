@@ -69,6 +69,7 @@ beforeAll(async () => {
         LOG_LEVEL: 'silent',
         PORT: '0',
         USER_SERVICE_URL: userBase,
+        GATEWAY_CLIENT_SECRET: 'gateway-secret',
       }),
     ],
   }).compile();

@@ -115,6 +115,7 @@ export async function startGateway(extra: NodeJS.ProcessEnv = {}, keys: JWK[] = 
     LOG_LEVEL: 'silent',
     PORT: '0',
     JWKS_COOLDOWN_MS: '0',
+    GATEWAY_CLIENT_SECRET: 'test-secret',
     ...Object.fromEntries(SERVICES.map((s) => [`${s.toUpperCase()}_SERVICE_URL`, fakes[s]!.url])),
     ...extra,
   };

@@ -11,6 +11,9 @@ services:
       PROXY_TIMEOUT_MS: ${PROXY_TIMEOUT_MS:-10000}
       JWKS_CACHE_MAX_AGE_MS: ${JWKS_CACHE_MAX_AGE_MS:-300000}
       JWKS_COOLDOWN_MS: ${JWKS_COOLDOWN_MS:-30000}
+      GATEWAY_CLIENT_SECRET: ${GATEWAY_CLIENT_SECRET:?set GATEWAY_CLIENT_SECRET in .env}
+      WS_POLL_INTERVAL_MS: ${WS_POLL_INTERVAL_MS:-250}
+      WS_STATS_INTERVAL_MS: ${WS_STATS_INTERVAL_MS:-2000}
     # The only published port of the stack (besides web later): the public entry point.
     ports:
       - '${GATEWAY_HOST_PORT:-8080}:8080'

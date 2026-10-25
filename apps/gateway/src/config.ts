@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { baseEnvSchema } from '@rideshare/common';
+import { WS_ENDED_TRIP_RETENTION_MS } from '@rideshare/contracts';
 
 const url = (def: string) => z.url().default(def);
 
@@ -19,6 +20,18 @@ export const gatewayEnvSchema = baseEnvSchema.extend({
   JWKS_COOLDOWN_MS: z.coerce.number().int().min(0).default(30_000),
   /** How long a fetched JWKS is trusted before a refetch. */
   JWKS_CACHE_MAX_AGE_MS: z.coerce.number().int().positive().default(300_000),
+  /** Secret for the `gateway` service client (service tokens for the live-view poller). */
+  GATEWAY_CLIENT_SECRET: z.string().min(1),
+  /** Live-view poll cadence for drivers, riders, trips and sim state. */
+  WS_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(250),
+  /** Live-view stats cadence. */
+  WS_STATS_INTERVAL_MS: z.coerce.number().int().positive().default(2000),
+  /** How long an ended trip stays in the live model before it is removed. */
+  WS_ENDED_TRIP_RETENTION_MS: z.coerce.number().int().min(0).default(WS_ENDED_TRIP_RETENTION_MS),
+  /** Per-client `bufferedAmount` above which diffs are skipped and a fresh snapshot is owed. */
+  WS_BACKPRESSURE_BYTES: z.coerce.number().int().positive().default(1_048_576),
+  /** Unreferenced display-info entries are evicted after this long. */
+  WS_USER_CACHE_TTL_MS: z.coerce.number().int().positive().default(60_000),
 });
 
 export type GatewayEnv = z.infer<typeof gatewayEnvSchema>;
